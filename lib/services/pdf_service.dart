@@ -8,7 +8,8 @@ import '../model/store.dart';
 import '../model/sales.dart';
 
 class PdfService {
-  static Future<void> generateAndShareSalesReport({
+  // Generate PDF and return the file
+  static Future<File> _generatePdfFile({
     required Store store,
     required Map<String, dynamic> salesReport,
     DateTime? startDate,
@@ -301,6 +302,69 @@ class PdfService {
             .replaceAll('/', '_');
     final file = File('${output.path}/$fileName');
     await file.writeAsBytes(await pdf.save());
+
+    return file;
+  }
+
+  // Download PDF to Downloads folder
+  static Future<String> downloadSalesReport({
+    required Store store,
+    required Map<String, dynamic> salesReport,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    final file = await _generatePdfFile(
+      store: store,
+      salesReport: salesReport,
+      startDate: startDate,
+      endDate: endDate,
+    );
+
+    // Get Downloads directory
+    Directory? downloadsDir;
+    if (Platform.isAndroid) {
+      downloadsDir = Directory('/storage/emulated/0/Download');
+    } else {
+      downloadsDir = await getDownloadsDirectory();
+    }
+
+    if (downloadsDir != null && await downloadsDir.exists()) {
+      final fileName = file.path.split('/').last;
+      final newFile = File('${downloadsDir.path}/$fileName');
+      await file.copy(newFile.path);
+      return newFile.path;
+    } else {
+      // Fallback to app directory
+      return file.path;
+    }
+  }
+
+  // Share PDF
+  static Future<void> shareSalesReport({
+    required Store store,
+    required Map<String, dynamic> salesReport,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    final file = await _generatePdfFile(
+      store: store,
+      salesReport: salesReport,
+      startDate: startDate,
+      endDate: endDate,
+    );
+
+    final dateFormat = DateFormat('dd/MM/yyyy');
+    String reportPeriod;
+    if (startDate != null && endDate != null) {
+      if (dateFormat.format(startDate) == dateFormat.format(endDate)) {
+        reportPeriod = dateFormat.format(startDate);
+      } else {
+        reportPeriod =
+            '${dateFormat.format(startDate)} - ${dateFormat.format(endDate)}';
+      }
+    } else {
+      reportPeriod = dateFormat.format(DateTime.now());
+    }
 
     // Share the PDF
     await Share.shareXFiles(
