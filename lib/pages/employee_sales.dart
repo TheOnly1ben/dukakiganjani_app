@@ -431,7 +431,7 @@ class _EmployeeSalesPageState extends State<EmployeeSalesPage> {
                     children: [
                       Text(
                         sale.createdAt != null
-                            ? dateFormat.format(sale.createdAt!)
+                            ? dateFormat.format(sale.createdAt!.toLocal())
                             : 'N/A',
                         style: const TextStyle(
                           fontSize: 15,
@@ -441,7 +441,7 @@ class _EmployeeSalesPageState extends State<EmployeeSalesPage> {
                       ),
                       Text(
                         sale.createdAt != null
-                            ? timeFormat.format(sale.createdAt!)
+                            ? timeFormat.format(sale.createdAt!.toLocal())
                             : '',
                         style: TextStyle(
                           fontSize: 12,
