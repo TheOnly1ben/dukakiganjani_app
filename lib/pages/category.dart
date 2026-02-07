@@ -481,6 +481,7 @@ class _CategoryPageState extends State<CategoryPage> {
   Widget _buildProductCard(Product product) {
     return Container(
       width: 140,
+      height: 160,
       margin: const EdgeInsets.only(right: 12),
       child: InkWell(
         onTap: () {
@@ -535,34 +536,32 @@ class _CategoryPageState extends State<CategoryPage> {
                         size: 32,
                       ),
               ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        product.name,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1A1A1A),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+              Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      product.name,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1A1A1A),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${product.sellingPrice} TZS',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF00C853),
-                        ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${product.sellingPrice} TZS',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF00C853),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ],
