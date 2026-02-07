@@ -830,7 +830,7 @@ class _CategoryPageState extends State<CategoryPage> {
             ),
           ),
           SizedBox(
-            height: 120,
+            height: 190,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: products.length,
