@@ -72,6 +72,13 @@ class _EmployeeSalesPageState extends State<EmployeeSalesPage> {
       initialDateRange: _startDate != null && _endDate != null
           ? DateTimeRange(start: _startDate!, end: _endDate!)
           : null,
+      locale: const Locale('sw', 'TZ'),
+      helpText: 'Chagua kipindi',
+      cancelText: 'Ghairi',
+      confirmText: 'Sawa',
+      saveText: 'Hifadhi',
+      fieldStartLabelText: 'Tarehe ya kuanza',
+      fieldEndLabelText: 'Tarehe ya mwisho',
     );
 
     if (picked != null) {
