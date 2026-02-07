@@ -234,6 +234,26 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
     if (!_formKey.currentState!.validate()) return;
 
+    // Validate selling price vs cost price
+    final costPrice = costPriceController.text.isNotEmpty
+        ? double.tryParse(costPriceController.text)
+        : null;
+    final sellingPrice = double.tryParse(priceController.text) ?? 0;
+
+    if (costPrice != null && sellingPrice < costPrice) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Bei ya kuuza (${sellingPrice.toStringAsFixed(0)} TZS) haipaswi kuwa chini ya bei ya kununulia (${costPrice.toStringAsFixed(0)} TZS)',
+          ),
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      setState(() => isLoading = false);
+      return;
+    }
+
     setState(() => isLoading = true);
 
     try {
