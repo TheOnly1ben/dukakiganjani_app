@@ -203,6 +203,19 @@ class _ExpensesPageState extends State<ExpensesPage> {
                 ),
               ],
             ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showAddExpenseDialog,
+        backgroundColor: const Color(0xFF00C853),
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text(
+          'Nukuu matumizi',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
     );
   }
 
