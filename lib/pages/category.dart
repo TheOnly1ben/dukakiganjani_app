@@ -973,11 +973,15 @@ class _CategoryPageState extends State<CategoryPage> {
             fontWeight: FontWeight.w600,
             color: Color(0xFF1A1A1A),
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         subtitle: subcategory.description?.isNotEmpty ?? false
             ? Text(
                 subcategory.description!,
                 style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               )
             : null,
         trailing: Row(

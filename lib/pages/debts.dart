@@ -647,16 +647,17 @@ class DebtDetailsSheet extends StatelessWidget {
               children: [
                 _buildDetailRow('debts.customer'.tr(), debt.customerName),
                 const SizedBox(height: 8),
-                _buildDetailRow(
-                    'debts.total'.tr(), '${debt.totalCredit.toStringAsFixed(0)} TZS'),
+                _buildDetailRow('debts.total'.tr(),
+                    '${debt.totalCredit.toStringAsFixed(0)} TZS'),
+                const SizedBox(height: 8),
+                _buildDetailRow('debts.paid'.tr(),
+                    '${debt.paidAmount.toStringAsFixed(0)} TZS'),
+                const SizedBox(height: 8),
+                _buildDetailRow('debts.remaining'.tr(),
+                    '${debt.balance.toStringAsFixed(0)} TZS'),
                 const SizedBox(height: 8),
                 _buildDetailRow(
-                    'debts.paid'.tr(), '${debt.paidAmount.toStringAsFixed(0)} TZS'),
-                const SizedBox(height: 8),
-                _buildDetailRow(
-                    'debts.remaining'.tr(), '${debt.balance.toStringAsFixed(0)} TZS'),
-                const SizedBox(height: 8),
-                _buildDetailRow('debts.status'.tr(), 'debts.${debt.status}'.tr()),
+                    'debts.status'.tr(), 'debts.${debt.status}'.tr()),
                 const SizedBox(height: 8),
                 _buildDetailRow('debts.sale_date'.tr(),
                     '${debt.createdAt.day}/${debt.createdAt.month}/${debt.createdAt.year}'),
