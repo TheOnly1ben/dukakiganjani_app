@@ -481,7 +481,7 @@ class _CategoryPageState extends State<CategoryPage> {
   Widget _buildProductCard(Product product) {
     return Container(
       width: 140,
-      height: 160,
+      height: 180,
       margin: const EdgeInsets.only(right: 12),
       child: InkWell(
         onTap: () {
@@ -505,7 +505,7 @@ class _CategoryPageState extends State<CategoryPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                height: 80,
+                height: 100,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: Colors.grey.shade100,
@@ -554,7 +554,7 @@ class _CategoryPageState extends State<CategoryPage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${product.sellingPrice} TZS',
+                      '${product.sellingPrice.toStringAsFixed(0)} TZS',
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
