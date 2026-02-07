@@ -474,11 +474,26 @@ class _InventoryPageState extends State<InventoryPage> {
                         child: Image.network(
                           product.media!.first.mediaUrl,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Icon(
-                            Icons.inventory_2_outlined,
-                            color: Colors.grey.shade600,
-                            size: 48,
-                          ),
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes !=
+                                        null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                    : null,
+                                strokeWidth: 2,
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return Icon(
+                              Icons.inventory_2_outlined,
+                              color: Colors.grey.shade600,
+                              size: 48,
+                            );
+                          },
                         ),
                       )
                     : Icon(

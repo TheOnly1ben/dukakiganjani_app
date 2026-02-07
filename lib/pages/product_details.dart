@@ -305,6 +305,16 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         // Handle image uploads for existing product
         await _uploadSelectedImages(savedProduct.id!);
 
+        // Reload product to get updated images
+        existingProduct =
+            await SupabaseService.getProductById(savedProduct.id!);
+        if (existingProduct != null && existingProduct!.media != null) {
+          setState(() {
+            existingImages = existingProduct!.media!;
+            selectedImages = [null, null]; // Clear selected images
+          });
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('products.product_updated'.tr())),
         );
@@ -336,6 +346,17 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         debugPrint(
             '📸 Attempting to upload ${selectedImages.where((img) => img != null).length} images...');
         await _uploadSelectedImages(savedProduct.id!);
+
+        // Reload product to get uploaded images
+        final updatedProduct =
+            await SupabaseService.getProductById(savedProduct.id!);
+        if (updatedProduct != null && updatedProduct.media != null) {
+          setState(() {
+            existingProduct = updatedProduct;
+            existingImages = updatedProduct.media!;
+            selectedImages = [null, null]; // Clear selected images
+          });
+        }
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('products.product_added'.tr())),
@@ -469,13 +490,45 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                         fit: BoxFit.cover,
                                         width: 80,
                                         height: 80,
+                                        loadingBuilder:
+                                            (context, child, loadingProgress) {
+                                          if (loadingProgress == null)
+                                            return child;
+                                          return Center(
+                                            child: CircularProgressIndicator(
+                                              value: loadingProgress
+                                                          .expectedTotalBytes !=
+                                                      null
+                                                  ? loadingProgress
+                                                          .cumulativeBytesLoaded /
+                                                      loadingProgress
+                                                          .expectedTotalBytes!
+                                                  : null,
+                                              strokeWidth: 2,
+                                            ),
+                                          );
+                                        },
                                         errorBuilder:
-                                            (context, error, stackTrace) =>
-                                                Icon(
-                                          Icons.image_not_supported,
-                                          color: Colors.grey.shade600,
-                                          size: 24,
-                                        ),
+                                            (context, error, stackTrace) {
+                                          return Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.image_not_supported,
+                                                color: Colors.grey.shade600,
+                                                size: 24,
+                                              ),
+                                              Text(
+                                                'Failed',
+                                                style: TextStyle(
+                                                  fontSize: 8,
+                                                  color: Colors.grey.shade600,
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        },
                                       ),
                                     ),
                                     Positioned(

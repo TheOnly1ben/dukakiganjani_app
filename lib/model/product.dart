@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class Product {
   final String? id;
   final String storeId;
@@ -81,11 +83,15 @@ class Product {
       updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'])
           : null,
-      media: json['media'] != null
-          ? (json['media'] as List)
+      media: json['product_media'] != null
+          ? (json['product_media'] as List)
               .map((e) => ProductMedia.fromJson(e))
               .toList()
-          : null,
+          : json['media'] != null
+              ? (json['media'] as List)
+                  .map((e) => ProductMedia.fromJson(e))
+                  .toList()
+              : null,
     );
   }
 
