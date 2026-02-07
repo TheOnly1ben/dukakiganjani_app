@@ -484,7 +484,7 @@ class _AddPaymentDialogState extends State<AddPaymentDialog> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Zilizobaki: ${widget.debt.balance.toStringAsFixed(0)} TZS',
+                      '${'debts.balance_remaining'.tr()}: ${widget.debt.balance.toStringAsFixed(0)} TZS',
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey.shade600,
@@ -621,9 +621,9 @@ class DebtDetailsSheet extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Maelezo ya Deni',
-                style: TextStyle(
+              Text(
+                'debts.debt_details'.tr(),
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                 ),
@@ -645,20 +645,20 @@ class DebtDetailsSheet extends StatelessWidget {
             ),
             child: Column(
               children: [
-                _buildDetailRow('Mteja', debt.customerName),
+                _buildDetailRow('debts.customer'.tr(), debt.customerName),
                 const SizedBox(height: 8),
                 _buildDetailRow(
-                    'Jumla', '${debt.totalCredit.toStringAsFixed(0)} TZS'),
+                    'debts.total'.tr(), '${debt.totalCredit.toStringAsFixed(0)} TZS'),
                 const SizedBox(height: 8),
                 _buildDetailRow(
-                    'Amelipa', '${debt.paidAmount.toStringAsFixed(0)} TZS'),
+                    'debts.paid'.tr(), '${debt.paidAmount.toStringAsFixed(0)} TZS'),
                 const SizedBox(height: 8),
                 _buildDetailRow(
-                    'Imebaki', '${debt.balance.toStringAsFixed(0)} TZS'),
+                    'debts.remaining'.tr(), '${debt.balance.toStringAsFixed(0)} TZS'),
                 const SizedBox(height: 8),
-                _buildDetailRow('Hali', 'debts.${debt.status}'.tr()),
+                _buildDetailRow('debts.status'.tr(), 'debts.${debt.status}'.tr()),
                 const SizedBox(height: 8),
-                _buildDetailRow('Tarehe ya Mauzo',
+                _buildDetailRow('debts.sale_date'.tr(),
                     '${debt.createdAt.day}/${debt.createdAt.month}/${debt.createdAt.year}'),
               ],
             ),
@@ -671,7 +671,7 @@ class DebtDetailsSheet extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Maendeleo ya Malipo',
+                'debts.payment_progress'.tr(),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -685,7 +685,7 @@ class DebtDetailsSheet extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                '${(progress * 100).toStringAsFixed(1)}% imelipwa',
+                '${(progress * 100).toStringAsFixed(1)}% ${'debts.paid_suffix'.tr()}',
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey.shade600,
