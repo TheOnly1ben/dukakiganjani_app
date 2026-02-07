@@ -245,6 +245,7 @@
     "status": "Hali",
     "pending": "Inasubiri",
     "paid": "Imelipwa",
+    "partial": "Kiasi",
     "unpaid": "Haijalipiwa",
     "overdue": "Imechelewa",
     "total_debts": "Jumla ya Madeni",

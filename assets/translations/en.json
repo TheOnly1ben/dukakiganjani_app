@@ -230,6 +230,7 @@
     "status": "Status",
     "pending": "Pending",
     "paid": "Paid",
+    "partial": "Partial",
     "overdue": "Overdue",
     "total_debts": "Total Outstanding",
     "total_paid": "Total Paid",
