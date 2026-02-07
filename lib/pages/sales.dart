@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import '../model/store.dart';
 import '../model/product.dart';
 import '../model/sales.dart';
-import '../services/supabase_service.dart';
+import '../services/offline_data_service.dart';
 
 class SalesPage extends StatefulWidget {
   final Store store;
@@ -25,7 +25,8 @@ class _SalesPageState extends State<SalesPage> {
 
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _customerNameController = TextEditingController();
-  final TextEditingController _customerPhoneController = TextEditingController();
+  final TextEditingController _customerPhoneController =
+      TextEditingController();
 
   PaymentMethod _paymentMethod = PaymentMethod.cash;
 
@@ -38,7 +39,8 @@ class _SalesPageState extends State<SalesPage> {
 
   Future<void> _loadProducts() async {
     try {
-      final products = await SupabaseService.getProductsForStore(widget.store.id);
+      final products =
+          await OfflineDataService.getProductsForStore(widget.store.id);
       if (mounted) {
         setState(() {
           _products = products;
@@ -75,7 +77,8 @@ class _SalesPageState extends State<SalesPage> {
         return;
       }
 
-      final existingIndex = _cartItems.indexWhere((item) => item.productId == product.id);
+      final existingIndex =
+          _cartItems.indexWhere((item) => item.productId == product.id);
 
       if (existingIndex != -1) {
         final item = _cartItems[existingIndex];
@@ -83,7 +86,8 @@ class _SalesPageState extends State<SalesPage> {
           item.quantity++;
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Umefikia kiwango cha juu cha bidhaa zilizopo.')),
+            SnackBar(
+                content: Text('Umefikia kiwango cha juu cha bidhaa zilizopo.')),
           );
         }
       } else {
@@ -100,7 +104,8 @@ class _SalesPageState extends State<SalesPage> {
 
   void _updateQuantity(String productId, int newQuantity) {
     setState(() {
-      final itemIndex = _cartItems.indexWhere((item) => item.productId == productId);
+      final itemIndex =
+          _cartItems.indexWhere((item) => item.productId == productId);
       if (itemIndex == -1) return;
 
       final item = _cartItems[itemIndex];
@@ -112,7 +117,8 @@ class _SalesPageState extends State<SalesPage> {
         item.quantity = maxStock.toInt();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Kiasi kimezidi, zimebaki ${maxStock.toInt()} pekee.'),
+            content:
+                Text('Kiasi kimezidi, zimebaki ${maxStock.toInt()} pekee.'),
             backgroundColor: Colors.orange,
           ),
         );
@@ -133,7 +139,8 @@ class _SalesPageState extends State<SalesPage> {
     }
 
     if (_paymentMethod == PaymentMethod.credit &&
-        (_customerNameController.text.isEmpty || _customerPhoneController.text.isEmpty)) {
+        (_customerNameController.text.isEmpty ||
+            _customerPhoneController.text.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('sales.customer_required'.tr())),
       );
@@ -143,10 +150,14 @@ class _SalesPageState extends State<SalesPage> {
     setState(() => _isProcessing = true);
 
     try {
-      final customerName = _paymentMethod == PaymentMethod.credit ? _customerNameController.text : null;
-      final customerPhone = _paymentMethod == PaymentMethod.credit ? _customerPhoneController.text : null;
+      final customerName = _paymentMethod == PaymentMethod.credit
+          ? _customerNameController.text
+          : null;
+      final customerPhone = _paymentMethod == PaymentMethod.credit
+          ? _customerPhoneController.text
+          : null;
 
-      await SupabaseService.createSale(
+      await OfflineDataService.createSale(
         storeId: widget.store.id,
         cartItems: _cartItems,
         paymentMethod: _paymentMethod,
@@ -156,7 +167,9 @@ class _SalesPageState extends State<SalesPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('sales.sale_success'.tr(args: [_total.toStringAsFixed(0)]))),
+          SnackBar(
+              content: Text(
+                  'sales.sale_success'.tr(args: [_total.toStringAsFixed(0)]))),
         );
       }
 
@@ -197,7 +210,8 @@ class _SalesPageState extends State<SalesPage> {
   }
 
   void _showQuantityDialog(CartItem item) {
-    final quantityController = TextEditingController(text: item.quantity.toString());
+    final quantityController =
+        TextEditingController(text: item.quantity.toString());
     final maxStock = item.product.quantity?.toInt() ?? 0;
 
     showDialog(
@@ -264,7 +278,8 @@ class _SalesPageState extends State<SalesPage> {
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A), size: 22),
+          icon:
+              const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A), size: 22),
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
@@ -300,7 +315,8 @@ class _SalesPageState extends State<SalesPage> {
                         : ListView.separated(
                             padding: const EdgeInsets.all(16),
                             itemCount: _cartItems.length,
-                            separatorBuilder: (context, index) => const SizedBox(height: 12),
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(height: 12),
                             itemBuilder: (context, index) {
                               final item = _cartItems[index];
                               return _buildCartItemCard(item);
@@ -407,7 +423,8 @@ class _SalesPageState extends State<SalesPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     InkWell(
-                      onTap: () => _updateQuantity(item.productId, item.quantity - 1),
+                      onTap: () =>
+                          _updateQuantity(item.productId, item.quantity - 1),
                       child: Container(
                         padding: const EdgeInsets.all(6),
                         child: Icon(
@@ -422,7 +439,8 @@ class _SalesPageState extends State<SalesPage> {
                       child: Container(
                         constraints: const BoxConstraints(minWidth: 32),
                         alignment: Alignment.center,
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         child: Text(
                           '${item.quantity}',
                           style: const TextStyle(
@@ -433,13 +451,16 @@ class _SalesPageState extends State<SalesPage> {
                       ),
                     ),
                     InkWell(
-                      onTap: () => _updateQuantity(item.productId, item.quantity + 1),
+                      onTap: () =>
+                          _updateQuantity(item.productId, item.quantity + 1),
                       child: Container(
                         padding: const EdgeInsets.all(6),
                         child: Icon(
                           Icons.add,
                           size: 18,
-                          color: item.quantity < maxStock ? const Color(0xFF1A1A1A) : Colors.grey.shade400,
+                          color: item.quantity < maxStock
+                              ? const Color(0xFF1A1A1A)
+                              : Colors.grey.shade400,
                         ),
                       ),
                     ),
@@ -569,7 +590,8 @@ class _SalesPageState extends State<SalesPage> {
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
                       : Text(
@@ -611,7 +633,8 @@ class _SalesPageState extends State<SalesPage> {
       ),
       style: OutlinedButton.styleFrom(
         backgroundColor: isSelected ? const Color(0xFF00C853) : Colors.white,
-        side: BorderSide(color: isSelected ? const Color(0xFF00C853) : Colors.grey.shade300),
+        side: BorderSide(
+            color: isSelected ? const Color(0xFF00C853) : Colors.grey.shade300),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
@@ -682,8 +705,16 @@ class _ProductSelectionSheetState extends State<_ProductSelectionSheet> {
                           final product = widget.filteredProducts[index];
                           return ListTile(
                             title: Text(product.name),
-                            subtitle: Text('${product.sellingPrice.toStringAsFixed(0)} TZS'),
-                            trailing: Text('sales.stock_label'.tr(args: [product.quantity.toString()]), style: TextStyle(color: (product.quantity ?? 0) > 0 ? Colors.green : Colors.red),),
+                            subtitle: Text(
+                                '${product.sellingPrice.toStringAsFixed(0)} TZS'),
+                            trailing: Text(
+                              'sales.stock_label'
+                                  .tr(args: [product.quantity.toString()]),
+                              style: TextStyle(
+                                  color: (product.quantity ?? 0) > 0
+                                      ? Colors.green
+                                      : Colors.red),
+                            ),
                             onTap: () => widget.onProductSelected(product),
                           );
                         },

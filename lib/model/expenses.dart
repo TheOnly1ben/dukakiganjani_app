@@ -31,7 +31,9 @@ class Expense {
       notes: json['notes'],
       expenseDate: DateTime.parse(json['expense_date']),
       createdBy: json['created_by'],
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : null,
     );
   }
 

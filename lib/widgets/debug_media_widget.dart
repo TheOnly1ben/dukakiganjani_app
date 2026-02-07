@@ -32,11 +32,11 @@ class DebugMediaWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          
+
           // Media count
           Text('Media count: ${product.media?.length ?? 0}'),
           const SizedBox(height: 8),
-          
+
           // Media details
           if (product.media != null && product.media!.isNotEmpty)
             Column(
@@ -55,7 +55,7 @@ class DebugMediaWidget extends StatelessWidget {
                     Text('Primary: ${media.isPrimary}'),
                     Text('URL: ${media.mediaUrl}'),
                     const SizedBox(height: 8),
-                    
+
                     // Test image loading
                     Container(
                       height: 100,
@@ -83,7 +83,7 @@ class DebugMediaWidget extends StatelessWidget {
             )
           else
             const Text('No media found'),
-          
+
           // Debug buttons
           const SizedBox(height: 16),
           Row(
@@ -93,7 +93,9 @@ class DebugMediaWidget extends StatelessWidget {
                   try {
                     await SupabaseService.checkStorageConfiguration();
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Storage configuration checked. See console for details.')),
+                      const SnackBar(
+                          content: Text(
+                              'Storage configuration checked. See console for details.')),
                     );
                   } catch (e) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -108,7 +110,8 @@ class DebugMediaWidget extends StatelessWidget {
                 onPressed: () async {
                   if (product.media != null && product.media!.isNotEmpty) {
                     try {
-                      final testUrl = await SupabaseService.testMediaUrl(product.media!.first.mediaUrl);
+                      final testUrl = await SupabaseService.testMediaUrl(
+                          product.media!.first.mediaUrl);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Test URL: $testUrl')),
                       );

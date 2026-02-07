@@ -36,7 +36,8 @@ class CustomerCredit {
       paidAmount: json['paid_amount']?.toDouble() ?? 0.0,
       balance: json['balance']?.toDouble() ?? 0.0,
       status: json['status'] ?? 'unpaid',
-      dueDate: json['due_date'] != null ? DateTime.parse(json['due_date']) : null,
+      dueDate:
+          json['due_date'] != null ? DateTime.parse(json['due_date']) : null,
       createdAt: DateTime.parse(json['created_at']),
     );
   }

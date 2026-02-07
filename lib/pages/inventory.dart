@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../model/store.dart';
 import '../model/product.dart';
+import '../services/offline_data_service.dart';
 import '../services/supabase_service.dart';
+import '../services/notification_service.dart';
 import 'product_details.dart';
 import 'product_view.dart';
 
@@ -35,17 +37,39 @@ class _InventoryPageState extends State<InventoryPage> {
 
   Future<void> _loadProducts() async {
     try {
-      final products = await SupabaseService.getProductsForStore(widget.store.id);
+      final products =
+          await OfflineDataService.getProductsForStore(widget.store.id);
       setState(() {
         _products = products;
         _filteredProducts = products;
         _isLoading = false;
       });
+
+      // Check for low stock and send notifications
+      _checkLowStockAndNotify();
     } catch (e) {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error loading products: $e')),
       );
+    }
+  }
+
+  void _checkLowStockAndNotify() {
+    final notificationService = NotificationService();
+
+    for (final product in _products) {
+      final quantity = product.quantity ?? 0;
+      final lowStockAlert = product.lowStockAlert ?? 0;
+
+      // Send notification if stock is low
+      if (quantity > 0 && quantity <= lowStockAlert) {
+        notificationService.showLowStockAlert(
+          productName: product.name,
+          quantity: quantity.toInt(),
+          threshold: lowStockAlert.toInt(),
+        );
+      }
     }
   }
 
@@ -90,6 +114,78 @@ class _InventoryPageState extends State<InventoryPage> {
     }
   }
 
+  Future<void> _deleteProduct(Product product) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.warning_rounded,
+                  color: Colors.red.shade600, size: 24),
+            ),
+            const SizedBox(width: 12),
+            const Text('Futa Bidhaa'),
+          ],
+        ),
+        content: Text('Una uhakika unataka kufuta "${product.name}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.grey.shade700,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
+            child: const Text('Ghairi'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Futa'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await SupabaseService.deleteProduct(product.id!);
+        setState(() {
+          _products.removeWhere((p) => p.id == product.id);
+          _filterProducts();
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Bidhaa imefutwa kwa mafanikio'),
+            backgroundColor: Color(0xFF00C853),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Imeshindwa kufuta bidhaa: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -101,13 +197,21 @@ class _InventoryPageState extends State<InventoryPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => ProductDetailsPage(storeId: widget.store.id)),
-        ),
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) =>
+                    ProductDetailsPage(storeId: widget.store.id)),
+          );
+          if (result == true) {
+            _loadProducts();
+          }
+        },
         backgroundColor: const Color(0xFF00C853),
         icon: const Icon(Icons.add, color: Colors.white),
-        label: Text('inventory.add_item'.tr(), style: const TextStyle(color: Colors.white)),
+        label: Text('inventory.add_item'.tr(),
+            style: const TextStyle(color: Colors.white)),
         tooltip: 'inventory.add_item'.tr(),
       ),
       appBar: AppBar(
@@ -197,8 +301,6 @@ class _InventoryPageState extends State<InventoryPage> {
     );
   }
 
-
-
   Widget _buildFilterChips() {
     final filterKeys = ['all', 'in_stock', 'low_stock', 'out_of_stock'];
     final filters = filterKeys.map((key) => key.tr()).toList();
@@ -217,7 +319,8 @@ class _InventoryPageState extends State<InventoryPage> {
           final key = filterKeys[index];
           final color = filterColors[key]!;
           return Container(
-            margin: EdgeInsets.only(right: index < filters.length - 1 ? 8.0 : 0),
+            margin:
+                EdgeInsets.only(right: index < filters.length - 1 ? 8.0 : 0),
             child: FilterChip(
               label: Text(filter),
               selected: _selectedFilterKey == key,
@@ -231,9 +334,7 @@ class _InventoryPageState extends State<InventoryPage> {
               selectedColor: color.withOpacity(0.1),
               checkmarkColor: color,
               labelStyle: TextStyle(
-                color: _selectedFilterKey == key
-                    ? color
-                    : Colors.grey.shade600,
+                color: _selectedFilterKey == key ? color : Colors.grey.shade600,
                 fontWeight: _selectedFilterKey == key
                     ? FontWeight.w600
                     : FontWeight.w500,
@@ -241,9 +342,8 @@ class _InventoryPageState extends State<InventoryPage> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
                 side: BorderSide(
-                  color: _selectedFilterKey == key
-                      ? color
-                      : Colors.grey.shade300,
+                  color:
+                      _selectedFilterKey == key ? color : Colors.grey.shade300,
                 ),
               ),
             ),
@@ -307,7 +407,9 @@ class _InventoryPageState extends State<InventoryPage> {
         Wrap(
           spacing: 12,
           runSpacing: 12,
-          children: _filteredProducts.map((product) => _buildProductCard(product)).toList(),
+          children: _filteredProducts
+              .map((product) => _buildProductCard(product))
+              .toList(),
         ),
       ],
     );
@@ -326,14 +428,20 @@ class _InventoryPageState extends State<InventoryPage> {
     // For in stock (quantity > lowStockAlert), keep grey
 
     return SizedBox(
-      width: (MediaQuery.of(context).size.width - 20 * 2 - 12) / 2, // Account for padding and spacing
+      width: (MediaQuery.of(context).size.width - 20 * 2 - 12) /
+          2, // Account for padding and spacing
       child: InkWell(
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProductViewPage(storeId: widget.store.id, productId: product.id),
+            builder: (context) => ProductViewPage(
+                storeId: widget.store.id, productId: product.id),
           ),
-        ),
+        ).then((result) {
+          if (result == true) {
+            _loadProducts();
+          }
+        }),
         borderRadius: BorderRadius.circular(12),
         child: Container(
           decoration: BoxDecoration(

@@ -1,0 +1,294 @@
+// Example: How to migrate a page to use offline-first architecture
+
+// ============================================
+// BEFORE: Using SupabaseService (online only)
+// ============================================
+
+import '../services/supabase_service.dart';
+
+class InventoryPage extends StatefulWidget {
+  // ...
+}
+
+class _InventoryPageState extends State<InventoryPage> {
+  List<Product> _products = [];
+  
+  Future<void> _loadProducts() async {
+    final products = await SupabaseService.getProductsForStore(widget.store.id);
+    setState(() {
+      _products = products;
+    });
+  }
+  
+  Future<void> _addProduct(Product product) async {
+    await SupabaseService.addProduct(product);
+    _loadProducts();
+  }
+}
+
+// ============================================
+// AFTER: Using OfflineRepository (offline-first)
+// ============================================
+
+import '../services/offline_repository.dart';
+import '../widgets/sync_status_widget.dart';
+
+class InventoryPage extends StatefulWidget {
+  // ...
+}
+
+class _InventoryPageState extends State<InventoryPage> {
+  final _repository = OfflineRepository(); // Add this
+  List<Product> _products = [];
+  
+  Future<void> _loadProducts() async {
+    // Get from local database (works offline!)
+    final productsData = await _repository.getProducts(storeId: widget.store.id);
+    
+    // Convert Map to Product objects
+    setState(() {
+      _products = productsData.map((data) => Product.fromMap(data)).toList();
+    });
+  }
+  
+  Future<void> _addProduct(Product product) async {
+    // Save to local DB + queue for sync
+    await _repository.addProduct({
+      'store_id': widget.store.id,
+      'name': product.name,
+      'price': product.price,
+      'stock_quantity': product.stockQuantity,
+      'category': product.category,
+      // ... other fields
+    });
+    
+    // Reload from local DB (instant!)
+    _loadProducts();
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Inventory'),
+        actions: [
+          const SyncStatusWidget(), // Add sync status indicator
+        ],
+      ),
+      // ... rest of UI
+    );
+  }
+}
+
+// ============================================
+// EXAMPLE: Sales Page Migration
+// ============================================
+
+// BEFORE
+class SalesPage extends StatefulWidget {
+  // ...
+}
+
+class _SalesPageState extends State<SalesPage> {
+  Future<void> _recordSale(Sale sale) async {
+    await SupabaseService.recordSale(sale);
+  }
+  
+  Future<void> _loadSales() async {
+    final sales = await SupabaseService.getSalesForStore(widget.store.id);
+    setState(() => _sales = sales);
+  }
+}
+
+// AFTER
+class SalesPage extends StatefulWidget {
+  // ...
+}
+
+class _SalesPageState extends State<SalesPage> {
+  final _repository = OfflineRepository();
+  
+  Future<void> _recordSale(Sale sale) async {
+    // Works offline! Saves locally, syncs later
+    await _repository.addSale({
+      'store_id': widget.store.id,
+      'product_id': sale.productId,
+      'product_name': sale.productName,
+      'quantity': sale.quantity,
+      'price': sale.price,
+      'total': sale.total,
+      'employee_id': sale.employeeId,
+      'sale_date': sale.saleDate.toIso8601String(),
+    });
+    
+    _loadSales(); // Reload from local DB
+  }
+  
+  Future<void> _loadSales() async {
+    final salesData = await _repository.getSales(
+      storeId: widget.store.id,
+      startDate: _startDate,
+      endDate: _endDate,
+    );
+    
+    setState(() {
+      _sales = salesData.map((data) => Sale.fromMap(data)).toList();
+    });
+  }
+}
+
+// ============================================
+// EXAMPLE: Expenses Page Migration
+// ============================================
+
+// BEFORE
+Future<void> _addExpense() async {
+  await SupabaseService.addExpense(expense);
+}
+
+// AFTER
+Future<void> _addExpense() async {
+  await _repository.addExpense({
+    'store_id': widget.store.id,
+    'description': _descriptionController.text,
+    'amount': double.parse(_amountController.text),
+    'category': _selectedCategory,
+    'expense_date': DateTime.now().toIso8601String(),
+  });
+}
+
+// ============================================
+// EXAMPLE: Showing Offline Indicator
+// ============================================
+
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: Text('My Page'),
+      actions: [
+        const SyncStatusWidget(), // Shows: syncing/synced/offline
+      ],
+    ),
+    body: Column(
+      children: [
+        const OfflineIndicator(), // Banner when offline
+        Expanded(
+          child: // ... your content
+        ),
+      ],
+    ),
+  );
+}
+
+// ============================================
+// EXAMPLE: Manual Sync Button
+// ============================================
+
+ElevatedButton(
+  onPressed: () async {
+    final repository = OfflineRepository();
+    
+    // Show loading
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Syncing...')),
+    );
+    
+    // Trigger sync
+    await repository.syncNow();
+    
+    // Show success
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Sync complete!')),
+    );
+  },
+  child: Text('Sync Now'),
+)
+
+// ============================================
+// EXAMPLE: Check Pending Sync Count
+// ============================================
+
+Future<void> _checkPendingOperations() async {
+  final repository = OfflineRepository();
+  final pendingCount = await repository.getPendingSyncCount();
+  
+  if (pendingCount > 0) {
+    print('$pendingCount operations pending sync');
+  }
+}
+
+// ============================================
+// EXAMPLE: Check Online Status
+// ============================================
+
+Future<void> _checkConnectivity() async {
+  final repository = OfflineRepository();
+  final isOnline = await repository.isOnline();
+  
+  if (isOnline) {
+    print('Device is online - syncing...');
+    await repository.syncNow();
+  } else {
+    print('Device is offline - working offline');
+  }
+}
+
+// ============================================
+// CONVERSION HELPER: Map to Model
+// ============================================
+
+// If your models have fromMap constructor:
+class Product {
+  final int? id;
+  final String name;
+  final double price;
+  // ... other fields
+  
+  factory Product.fromMap(Map<String, dynamic> map) {
+    return Product(
+      id: map['id'] as int?,
+      name: map['name'] as String,
+      price: (map['price'] as num).toDouble(),
+      // ... other fields
+    );
+  }
+}
+
+// Then use:
+final productsData = await _repository.getProducts(storeId: storeId);
+final products = productsData.map((data) => Product.fromMap(data)).toList();
+
+// ============================================
+// KEY DIFFERENCES SUMMARY
+// ============================================
+
+// OLD WAY (SupabaseService):
+// - Requires internet connection
+// - Slow (waits for server response)
+// - Fails when offline
+// - Direct Supabase calls
+
+// NEW WAY (OfflineRepository):
+// - Works offline
+// - Fast (instant local response)
+// - Never fails due to connectivity
+// - Automatic sync when online
+// - All data operations queued
+
+// ============================================
+// MIGRATION CHECKLIST PER PAGE
+// ============================================
+
+/*
+□ Import OfflineRepository
+□ Import SyncStatusWidget (optional)
+□ Create repository instance: final _repository = OfflineRepository()
+□ Replace SupabaseService.getX() with _repository.getX()
+□ Replace SupabaseService.addX() with _repository.addX()
+□ Update parameters (SupabaseService uses objects, Repository uses Maps)
+□ Convert Map results to model objects using .fromMap()
+□ Add SyncStatusWidget to AppBar (optional)
+□ Add OfflineIndicator banner (optional)
+□ Test with airplane mode enabled
+*/

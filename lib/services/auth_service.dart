@@ -70,7 +70,8 @@ class AuthService extends ChangeNotifier {
     try {
       // Check connectivity
       final connectivityResult = await _connectivity.checkConnectivity();
-      final isOnline = connectivityResult != ConnectivityResult.none;
+      final isOnline = connectivityResult.isNotEmpty &&
+          !connectivityResult.contains(ConnectivityResult.none);
 
       // Try to restore auth state from cache
       await _restoreAuthState();
@@ -311,7 +312,8 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
 
       final connectivityResult = await _connectivity.checkConnectivity();
-      if (connectivityResult == ConnectivityResult.none) {
+      if (connectivityResult.isEmpty ||
+          connectivityResult.contains(ConnectivityResult.none)) {
         _authState = AuthState.error;
         _lastError = 'No internet connection. Please connect and try again.';
         notifyListeners();
@@ -413,7 +415,8 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
 
       final connectivityResult = await _connectivity.checkConnectivity();
-      if (connectivityResult == ConnectivityResult.none) {
+      if (connectivityResult.isEmpty ||
+          connectivityResult.contains(ConnectivityResult.none)) {
         _authState = AuthState.error;
         _lastError = 'No internet connection. Please connect and try again.';
         notifyListeners();

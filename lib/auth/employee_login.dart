@@ -84,7 +84,8 @@ class EmployeeLoginPage extends StatefulWidget {
 
 class _EmployeeLoginPageState extends State<EmployeeLoginPage> {
   final TextEditingController _employeeIdController = TextEditingController();
-  final List<TextEditingController> _pinBoxControllers = List.generate(4, (index) => TextEditingController());
+  final List<TextEditingController> _pinBoxControllers =
+      List.generate(4, (index) => TextEditingController());
   bool _isLoading = false;
 
   @override
@@ -200,7 +201,7 @@ class _EmployeeLoginPageState extends State<EmployeeLoginPage> {
                     },
                   ),
                   const SizedBox(height: 40),
-                  
+
                   // Employee ID Input
                   SizedBox(
                     width: 320,
@@ -223,7 +224,8 @@ class _EmployeeLoginPageState extends State<EmployeeLoginPage> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFF00C853)),
+                          borderSide:
+                              const BorderSide(color: Color(0xFF00C853)),
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -233,7 +235,7 @@ class _EmployeeLoginPageState extends State<EmployeeLoginPage> {
                     ),
                   ),
                   const SizedBox(height: 32),
-                  
+
                   // PIN Label
                   Align(
                     alignment: Alignment.centerLeft,
@@ -247,7 +249,7 @@ class _EmployeeLoginPageState extends State<EmployeeLoginPage> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  
+
                   // PIN Input - 4 Boxes
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -286,7 +288,8 @@ class _EmployeeLoginPageState extends State<EmployeeLoginPage> {
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _handleLogin,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _isLoading ? Colors.grey : const Color(0xFF00C853),
+                        backgroundColor:
+                            _isLoading ? Colors.grey : const Color(0xFF00C853),
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
@@ -299,7 +302,8 @@ class _EmployeeLoginPageState extends State<EmployeeLoginPage> {
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
                           : const Text(

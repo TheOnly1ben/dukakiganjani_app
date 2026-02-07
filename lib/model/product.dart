@@ -67,14 +67,24 @@ class Product {
       isActive: json['is_active'] ?? true,
       description: json['description'],
       supplierName: json['supplier_name'],
-      expiryDate: json['expiry_date'] != null ? DateTime.parse(json['expiry_date']) : null,
+      expiryDate: json['expiry_date'] != null
+          ? DateTime.parse(json['expiry_date'])
+          : null,
       batchNumber: json['batch_number'],
       variants: json['variants'],
-      supplierDate: json['supplier_date'] != null ? DateTime.parse(json['supplier_date']) : null,
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
+      supplierDate: json['supplier_date'] != null
+          ? DateTime.parse(json['supplier_date'])
+          : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
+          : null,
       media: json['media'] != null
-          ? (json['media'] as List).map((e) => ProductMedia.fromJson(e)).toList()
+          ? (json['media'] as List)
+              .map((e) => ProductMedia.fromJson(e))
+              .toList()
           : null,
     );
   }
@@ -100,7 +110,8 @@ class Product {
       'expiry_date': expiryDate?.toIso8601String().split('T')[0], // Date only
       'batch_number': batchNumber,
       'variants': variants,
-      'supplier_date': supplierDate?.toIso8601String().split('T')[0], // Date only
+      'supplier_date':
+          supplierDate?.toIso8601String().split('T')[0], // Date only
       if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
       if (updatedAt != null) 'updated_at': updatedAt!.toIso8601String(),
     };
@@ -189,7 +200,9 @@ class ProductMedia {
       mediaType: json['media_type'],
       isPrimary: json['is_primary'] ?? false,
       sortOrder: json['sort_order'] ?? 0,
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : null,
     );
   }
 

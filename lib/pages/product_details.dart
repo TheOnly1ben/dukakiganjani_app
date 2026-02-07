@@ -5,6 +5,7 @@ import 'dart:io';
 import '../model/product.dart';
 import '../model/category.dart';
 import '../services/supabase_service.dart';
+import '../services/offline_data_service.dart';
 
 class ProductDetailsPage extends StatefulWidget {
   final String? storeId;
@@ -49,7 +50,10 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   List<SubCategory> subCategories = [];
   String? selectedCategoryId;
   String? selectedSubCategoryId;
-  List<XFile?> selectedImages = [null, null]; // Changed to XFile for image picker
+  List<XFile?> selectedImages = [
+    null,
+    null
+  ]; // Changed to XFile for image picker
   List<ProductMedia> existingImages = []; // Existing images from database
   final ImagePicker _imagePicker = ImagePicker();
 
@@ -87,11 +91,13 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
     try {
       // Load categories
-      categories = await SupabaseService.getCategoriesForStore(widget.storeId!);
+      categories =
+          await OfflineDataService.getCategoriesForStore(widget.storeId!);
 
       // Load existing product if editing
       if (widget.productId != null) {
-        existingProduct = await SupabaseService.getProductById(widget.productId!);
+        existingProduct =
+            await SupabaseService.getProductById(widget.productId!);
         _populateControllers();
       }
     } catch (e) {
@@ -111,16 +117,21 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     quantityController.text = existingProduct!.quantity?.toString() ?? '0';
 
     costPriceController.text = existingProduct!.costPrice?.toString() ?? '';
-    lowStockAlertController.text = existingProduct!.lowStockAlert?.toString() ?? '';
-    wholesalePriceController.text = existingProduct!.wholesalePrice?.toString() ?? '';
-    discountPriceController.text = existingProduct!.discountPrice?.toString() ?? '';
+    lowStockAlertController.text =
+        existingProduct!.lowStockAlert?.toString() ?? '';
+    wholesalePriceController.text =
+        existingProduct!.wholesalePrice?.toString() ?? '';
+    discountPriceController.text =
+        existingProduct!.discountPrice?.toString() ?? '';
     descriptionController.text = existingProduct!.description ?? '';
     supplierNameController.text = existingProduct!.supplierName ?? '';
-    expiryDateController.text = existingProduct!.expiryDate?.toIso8601String().split('T')[0] ?? '';
+    expiryDateController.text =
+        existingProduct!.expiryDate?.toIso8601String().split('T')[0] ?? '';
     batchNumberController.text = existingProduct!.batchNumber ?? '';
     skuController.text = existingProduct!.sku ?? '';
     productCodeController.text = existingProduct!.productCode ?? '';
-    supplierDateController.text = existingProduct!.supplierDate?.toIso8601String().split('T')[0] ?? '';
+    supplierDateController.text =
+        existingProduct!.supplierDate?.toIso8601String().split('T')[0] ?? '';
 
     selectedCategoryId = existingProduct!.categoryId;
     selectedSubCategoryId = existingProduct!.subCategoryId;
@@ -138,7 +149,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
   Future<void> _loadSubCategories(String categoryId) async {
     try {
-      subCategories = await SupabaseService.getSubCategoriesForCategory(categoryId);
+      subCategories =
+          await SupabaseService.getSubCategoriesForCategory(categoryId);
       setState(() {});
     } catch (e) {
       // Handle error silently
@@ -157,7 +169,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                 title: const Text('Camera'),
                 onTap: () async {
                   Navigator.of(context).pop();
-                  final XFile? image = await _imagePicker.pickImage(source: ImageSource.camera);
+                  final XFile? image =
+                      await _imagePicker.pickImage(source: ImageSource.camera);
                   if (image != null) {
                     setState(() {
                       selectedImages[index] = image;
@@ -170,7 +183,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                 title: const Text('Gallery'),
                 onTap: () async {
                   Navigator.of(context).pop();
-                  final XFile? image = await _imagePicker.pickImage(source: ImageSource.gallery);
+                  final XFile? image =
+                      await _imagePicker.pickImage(source: ImageSource.gallery);
                   if (image != null) {
                     setState(() {
                       selectedImages[index] = image;
@@ -180,7 +194,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
               ),
               ListTile(
                 leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text('Remove', style: TextStyle(color: Colors.red)),
+                title:
+                    const Text('Remove', style: TextStyle(color: Colors.red)),
                 onTap: () {
                   Navigator.of(context).pop();
                   setState(() {
@@ -229,25 +244,45 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         subCategoryId: selectedSubCategoryId,
         name: nameController.text.trim(),
         sku: skuController.text.isNotEmpty ? skuController.text.trim() : null,
-        productCode: productCodeController.text.isNotEmpty ? productCodeController.text.trim() : null,
-        costPrice: costPriceController.text.isNotEmpty ? double.tryParse(costPriceController.text) : null,
+        productCode: productCodeController.text.isNotEmpty
+            ? productCodeController.text.trim()
+            : null,
+        costPrice: costPriceController.text.isNotEmpty
+            ? double.tryParse(costPriceController.text)
+            : null,
         sellingPrice: double.parse(priceController.text),
-        wholesalePrice: wholesalePriceController.text.isNotEmpty ? double.tryParse(wholesalePriceController.text) : null,
-        discountPrice: discountPriceController.text.isNotEmpty ? double.tryParse(discountPriceController.text) : null,
+        wholesalePrice: wholesalePriceController.text.isNotEmpty
+            ? double.tryParse(wholesalePriceController.text)
+            : null,
+        discountPrice: discountPriceController.text.isNotEmpty
+            ? double.tryParse(discountPriceController.text)
+            : null,
         quantity: double.parse(quantityController.text),
-        lowStockAlert: lowStockAlertController.text.isNotEmpty ? int.parse(lowStockAlertController.text) : null,
-        description: descriptionController.text.isNotEmpty ? descriptionController.text.trim() : null,
-        supplierName: supplierNameController.text.isNotEmpty ? supplierNameController.text.trim() : null,
-        expiryDate: expiryDateController.text.isNotEmpty ? DateTime.parse(expiryDateController.text) : null,
-        batchNumber: batchNumberController.text.isNotEmpty ? batchNumberController.text.trim() : null,
-        supplierDate: supplierDateController.text.isNotEmpty ? DateTime.parse(supplierDateController.text) : null,
+        lowStockAlert: lowStockAlertController.text.isNotEmpty
+            ? int.parse(lowStockAlertController.text)
+            : null,
+        description: descriptionController.text.isNotEmpty
+            ? descriptionController.text.trim()
+            : null,
+        supplierName: supplierNameController.text.isNotEmpty
+            ? supplierNameController.text.trim()
+            : null,
+        expiryDate: expiryDateController.text.isNotEmpty
+            ? DateTime.parse(expiryDateController.text)
+            : null,
+        batchNumber: batchNumberController.text.isNotEmpty
+            ? batchNumberController.text.trim()
+            : null,
+        supplierDate: supplierDateController.text.isNotEmpty
+            ? DateTime.parse(supplierDateController.text)
+            : null,
       );
 
       late Product savedProduct;
 
       if (existingProduct != null) {
         // Update existing product
-        savedProduct = await SupabaseService.updateProduct(
+        savedProduct = await OfflineDataService.updateProductWithParams(
           productId: existingProduct!.id!,
           categoryId: productData.categoryId,
           subCategoryId: productData.subCategoryId,
@@ -258,7 +293,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
           sellingPrice: productData.sellingPrice,
           wholesalePrice: productData.wholesalePrice,
           discountPrice: productData.discountPrice,
-          quantity: productData.quantity,
+          quantity: productData.quantity?.toInt(),
           lowStockAlert: productData.lowStockAlert,
           description: productData.description,
           supplierName: productData.supplierName,
@@ -273,20 +308,22 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('products.product_updated'.tr())),
         );
+        Navigator.of(context).pop(true);
+        return;
       } else {
         // Add new product
-        savedProduct = await SupabaseService.addProduct(
+        savedProduct = await OfflineDataService.addProductWithParams(
           storeId: widget.storeId!,
           categoryId: productData.categoryId,
           subCategoryId: productData.subCategoryId,
           name: productData.name,
           sku: productData.sku,
           productCode: productData.productCode,
-          costPrice: productData.costPrice,
+          costPrice: productData.costPrice ?? 0.0,
           sellingPrice: productData.sellingPrice,
           wholesalePrice: productData.wholesalePrice,
           discountPrice: productData.discountPrice,
-          quantity: productData.quantity,
+          quantity: productData.quantity?.toInt() ?? 0,
           lowStockAlert: productData.lowStockAlert,
           description: productData.description,
           supplierName: productData.supplierName,
@@ -296,6 +333,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         );
 
         // Upload selected images for new product
+        debugPrint(
+            '📸 Attempting to upload ${selectedImages.where((img) => img != null).length} images...');
         await _uploadSelectedImages(savedProduct.id!);
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -303,7 +342,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         );
       }
 
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(true);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error saving product: $e')),
@@ -315,6 +354,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
   Future<void> _uploadSelectedImages(String productId) async {
     // Upload all selected images to Supabase Storage and save to product_media table
+    int successCount = 0;
+    int failCount = 0;
+
     for (int i = 0; i < selectedImages.length; i++) {
       final image = selectedImages[i];
       if (image != null) {
@@ -327,15 +369,41 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
             mediaType: 'image',
             isPrimary: i == 0, // First image is primary
           );
+          successCount++;
         } catch (e) {
+          failCount++;
           print('Error uploading image $i: $e');
-          // Continue with other images even if one fails
+          // Show error to user
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Picha $i haikuweza kuhifadhiwa: $e'),
+                backgroundColor: Colors.orange,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
         }
       }
     }
+
+    // Show summary if any images were attempted
+    if (successCount > 0 || failCount > 0) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              successCount > 0
+                  ? 'Picha $successCount zimehifadhiwa!'
+                  : 'Picha zote zimeshindwa kuhifadhiwa!',
+            ),
+            backgroundColor: successCount > 0 ? Colors.green : Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -346,7 +414,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         elevation: 0,
         surfaceTintColor: Colors.white,
         title: Text(
-          existingProduct != null ? 'products.edit_product'.tr() : 'products.add_product'.tr(),
+          existingProduct != null
+              ? 'products.edit_product'.tr()
+              : 'products.add_product'.tr(),
           style: const TextStyle(
             color: Color(0xFF1A1A1A),
             fontSize: 18,
@@ -373,7 +443,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                         height: 100,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
-                          itemCount: existingImages.length + 2, // existing + 2 new slots
+                          itemCount: existingImages.length +
+                              2, // existing + 2 new slots
                           itemBuilder: (context, index) {
                             // Show existing images first
                             if (index < existingImages.length) {
@@ -398,7 +469,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                         fit: BoxFit.cover,
                                         width: 80,
                                         height: 80,
-                                        errorBuilder: (context, error, stackTrace) => Icon(
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                Icon(
                                           Icons.image_not_supported,
                                           color: Colors.grey.shade600,
                                           size: 24,
@@ -440,7 +513,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                               onTap: () => _pickImage(newImageIndex),
                               child: Container(
                                 width: 80,
-                                margin: EdgeInsets.only(right: newImageIndex < 1 ? 8 : 0),
+                                margin: EdgeInsets.only(
+                                    right: newImageIndex < 1 ? 8 : 0),
                                 decoration: BoxDecoration(
                                   color: Colors.grey.shade100,
                                   borderRadius: BorderRadius.circular(8),
@@ -453,7 +527,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                     ? Stack(
                                         children: [
                                           ClipRRect(
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
                                             child: Image.file(
                                               File(image.path),
                                               fit: BoxFit.cover,
@@ -467,11 +542,13 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                             child: GestureDetector(
                                               onTap: () {
                                                 setState(() {
-                                                  selectedImages[newImageIndex] = null;
+                                                  selectedImages[
+                                                      newImageIndex] = null;
                                                 });
                                               },
                                               child: Container(
-                                                padding: const EdgeInsets.all(2),
+                                                padding:
+                                                    const EdgeInsets.all(2),
                                                 decoration: const BoxDecoration(
                                                   color: Colors.red,
                                                   shape: BoxShape.circle,
@@ -487,7 +564,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                         ],
                                       )
                                     : Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
                                           Icon(
                                             Icons.add_photo_alternate_outlined,
@@ -537,17 +615,21 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                           fillColor: const Color(0xFFF8F9FA),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+                            borderSide: BorderSide(
+                                color: Colors.grey.shade300, width: 1),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+                            borderSide: BorderSide(
+                                color: Colors.grey.shade300, width: 1),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFF00C853), width: 1.5),
+                            borderSide: const BorderSide(
+                                color: Color(0xFF00C853), width: 1.5),
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -572,18 +654,22 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                           fillColor: const Color(0xFFF8F9FA),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+                            borderSide: BorderSide(
+                                color: Colors.grey.shade300, width: 1),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+                            borderSide: BorderSide(
+                                color: Colors.grey.shade300, width: 1),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFF00C853), width: 1.5),
+                            borderSide: const BorderSide(
+                                color: Color(0xFF00C853), width: 1.5),
                           ),
                           suffixText: 'TZS',
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -608,18 +694,22 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                           fillColor: const Color(0xFFF8F9FA),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+                            borderSide: BorderSide(
+                                color: Colors.grey.shade300, width: 1),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+                            borderSide: BorderSide(
+                                color: Colors.grey.shade300, width: 1),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFF00C853), width: 1.5),
+                            borderSide: const BorderSide(
+                                color: Color(0xFF00C853), width: 1.5),
                           ),
                           suffixText: 'TZS',
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -644,17 +734,21 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                           fillColor: const Color(0xFFF8F9FA),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+                            borderSide: BorderSide(
+                                color: Colors.grey.shade300, width: 1),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+                            borderSide: BorderSide(
+                                color: Colors.grey.shade300, width: 1),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFF00C853), width: 1.5),
+                            borderSide: const BorderSide(
+                                color: Color(0xFF00C853), width: 1.5),
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -679,18 +773,22 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                           fillColor: const Color(0xFFF8F9FA),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+                            borderSide: BorderSide(
+                                color: Colors.grey.shade300, width: 1),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+                            borderSide: BorderSide(
+                                color: Colors.grey.shade300, width: 1),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFF00C853), width: 1.5),
+                            borderSide: const BorderSide(
+                                color: Color(0xFF00C853), width: 1.5),
                           ),
                           hintText: 'e.g., 5',
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -704,17 +802,21 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                           fillColor: const Color(0xFFF8F9FA),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+                            borderSide: BorderSide(
+                                color: Colors.grey.shade300, width: 1),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+                            borderSide: BorderSide(
+                                color: Colors.grey.shade300, width: 1),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFF00C853), width: 1.5),
+                            borderSide: const BorderSide(
+                                color: Color(0xFF00C853), width: 1.5),
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
                         ),
                         items: categories.map((category) {
                           return DropdownMenuItem(
@@ -737,7 +839,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                       const SizedBox(height: 16),
 
                       // Sub Category (Required section, not mandatory)
-                      if (selectedCategoryId != null && subCategories.isNotEmpty)
+                      if (selectedCategoryId != null &&
+                          subCategories.isNotEmpty)
                         DropdownButtonFormField<String>(
                           value: selectedSubCategoryId,
                           decoration: InputDecoration(
@@ -746,17 +849,21 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                             fillColor: const Color(0xFFF8F9FA),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+                              borderSide: BorderSide(
+                                  color: Colors.grey.shade300, width: 1),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+                              borderSide: BorderSide(
+                                  color: Colors.grey.shade300, width: 1),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: Color(0xFF00C853), width: 1.5),
+                              borderSide: const BorderSide(
+                                  color: Color(0xFF00C853), width: 1.5),
                             ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                           ),
                           items: subCategories.map((subCategory) {
                             return DropdownMenuItem(
@@ -770,7 +877,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                             });
                           },
                         ),
-                      if (selectedCategoryId != null && subCategories.isNotEmpty)
+                      if (selectedCategoryId != null &&
+                          subCategories.isNotEmpty)
                         const SizedBox(height: 24),
                       if (selectedCategoryId == null || subCategories.isEmpty)
                         const SizedBox(height: 24),
@@ -816,9 +924,11 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
                             focusedBorder: const UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFF00C853), width: 2),
+                              borderSide: BorderSide(
+                                  color: Color(0xFF00C853), width: 2),
                             ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -833,9 +943,11 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
                             focusedBorder: const UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFF00C853), width: 2),
+                              borderSide: BorderSide(
+                                  color: Color(0xFF00C853), width: 2),
                             ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -851,10 +963,12 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
                             focusedBorder: const UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFF00C853), width: 2),
+                              borderSide: BorderSide(
+                                  color: Color(0xFF00C853), width: 2),
                             ),
                             suffixText: 'TZS',
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -870,10 +984,12 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
                             focusedBorder: const UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFF00C853), width: 2),
+                              borderSide: BorderSide(
+                                  color: Color(0xFF00C853), width: 2),
                             ),
                             suffixText: 'TZS',
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -888,9 +1004,11 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
                             focusedBorder: const UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFF00C853), width: 2),
+                              borderSide: BorderSide(
+                                  color: Color(0xFF00C853), width: 2),
                             ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -905,20 +1023,24 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
                             focusedBorder: const UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFF00C853), width: 2),
+                              borderSide: BorderSide(
+                                  color: Color(0xFF00C853), width: 2),
                             ),
                             hintText: 'YYYY-MM-DD',
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                           ),
                           onTap: () async {
                             final date = await showDatePicker(
                               context: context,
                               initialDate: DateTime.now(),
                               firstDate: DateTime.now(),
-                              lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
+                              lastDate: DateTime.now()
+                                  .add(const Duration(days: 365 * 10)),
                             );
                             if (date != null) {
-                              expiryDateController.text = date.toIso8601String().split('T')[0];
+                              expiryDateController.text =
+                                  date.toIso8601String().split('T')[0];
                             }
                           },
                         ),
@@ -934,9 +1056,11 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
                             focusedBorder: const UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFF00C853), width: 2),
+                              borderSide: BorderSide(
+                                  color: Color(0xFF00C853), width: 2),
                             ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -951,10 +1075,12 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
                             focusedBorder: const UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFF00C853), width: 2),
+                              borderSide: BorderSide(
+                                  color: Color(0xFF00C853), width: 2),
                             ),
                             hintText: 'YYYY-MM-DD',
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                           ),
                           onTap: () async {
                             final date = await showDatePicker(
@@ -964,7 +1090,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                               lastDate: DateTime.now(),
                             );
                             if (date != null) {
-                              supplierDateController.text = date.toIso8601String().split('T')[0];
+                              supplierDateController.text =
+                                  date.toIso8601String().split('T')[0];
                             }
                           },
                         ),
@@ -981,9 +1108,11 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
                             focusedBorder: const UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFF00C853), width: 2),
+                              borderSide: BorderSide(
+                                  color: Color(0xFF00C853), width: 2),
                             ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -1000,7 +1129,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
                               ),
                               child: Text('products.cancel'.tr()),
                             ),
@@ -1014,7 +1144,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
                               ),
                               child: isLoading
                                   ? const SizedBox(
@@ -1022,10 +1153,14 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                       width: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                                Colors.white),
                                       ),
                                     )
-                                  : Text(existingProduct != null ? 'products.save'.tr() : 'products.add'.tr()),
+                                  : Text(existingProduct != null
+                                      ? 'products.save'.tr()
+                                      : 'products.add'.tr()),
                             ),
                           ),
                         ],
@@ -1038,8 +1173,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
             ),
     );
   }
-
-
 }
 
 class FullScreenImageViewer extends StatelessWidget {

@@ -114,7 +114,7 @@ class OnboardingPage extends StatelessWidget {
                           },
                         ),
                         const SizedBox(height: 16),
-                        
+
                         // Employee Card
                         _OptionCard(
                           icon: Icons.person,

@@ -65,7 +65,8 @@ class Debt {
       'remaining_amount': remainingAmount,
       'status': status,
       'sale_date': saleDate.toIso8601String(),
-      if (lastPaymentDate != null) 'last_payment_date': lastPaymentDate!.toIso8601String(),
+      if (lastPaymentDate != null)
+        'last_payment_date': lastPaymentDate!.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
     };
   }

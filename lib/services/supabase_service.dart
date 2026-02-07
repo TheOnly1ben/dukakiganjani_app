@@ -19,7 +19,6 @@ class SupabaseService {
     required String phone,
     required String pin,
     String? email,
-    String? securityAnswer,
   }) async {
     // Create fake email using phone number
     final fakeEmail = '$phone@dukakiganjani.com';
@@ -34,19 +33,12 @@ class SupabaseService {
     );
 
     if (authResponse.user != null) {
-      // Hash security answer if provided
-      String? hashedAnswer;
-      if (securityAnswer != null && securityAnswer.isNotEmpty) {
-        hashedAnswer = securityAnswer.toLowerCase().trim();
-      }
-
       // Insert into owner_profiles table
       await _client.from('owner_profiles').insert({
         'auth_id': authResponse.user!.id,
         'full_name': fullName,
         'email': email,
         'phone': phone, // Store phone without +255 prefix to fit VARCHAR(12)
-        if (hashedAnswer != null) 'security_answer': hashedAnswer,
       });
     }
 
@@ -72,84 +64,19 @@ class SupabaseService {
     return authResponse;
   }
 
-  // PIN Recovery Methods
-  static Future<Map<String, dynamic>?> verifyOwnerPhoneForPinReset(
-      String phone) async {
-    try {
-      final response = await _client
-          .from('owner_profiles')
-          .select('auth_id, security_answer')
-          .eq('phone', phone)
-          .maybeSingle();
-
-      return response;
-    } catch (e) {
-      print('Error verifying phone: $e');
-      return null;
-    }
-  }
-
-  static Future<bool> verifySecurityAnswer({
-    required String phone,
-    required String answer,
+  static Future<void> updateOwnerPhone({
+    required String authId,
+    required String newPhone,
   }) async {
-    try {
-      final normalizedAnswer = answer.toLowerCase().trim();
-
-      final response = await _client
-          .from('owner_profiles')
-          .select('security_answer')
-          .eq('phone', phone)
-          .maybeSingle();
-
-      if (response == null || response['security_answer'] == null) {
-        return false;
-      }
-
-      return response['security_answer'].toString().toLowerCase() ==
-          normalizedAnswer;
-    } catch (e) {
-      print('Error verifying security answer: $e');
-      return false;
+    final user = _client.auth.currentUser;
+    if (user == null) {
+      throw Exception('User not authenticated');
     }
-  }
 
-  static Future<bool> resetOwnerPin({
-    required String phone,
-    required String newPin,
-  }) async {
-    try {
-      // Get the auth_id for this phone
-      final profileResponse = await _client
-          .from('owner_profiles')
-          .select('auth_id')
-          .eq('phone', phone)
-          .single();
-
-      if (profileResponse == null) {
-        throw Exception('Owner profile not found');
-      }
-
-      final authId = profileResponse['auth_id'];
-      final fakeEmail = '$phone@dukakiganjani.com';
-      final newPassword = '$newPin@$phone';
-
-      // Update password in auth system
-      // Note: This requires admin access or the user to be logged in
-      // For now, we'll use the public API approach
-      await _client.auth.signInWithPassword(
-        email: fakeEmail,
-        password: '$phone@$phone', // temporary - this won't work
-      );
-
-      // Update through admin or use recovery email
-      // For production, you'd use Supabase Admin API
-
-      return true;
-    } catch (e) {
-      print('Error resetting PIN: $e');
-      return false;
-    }
+    // Update phone in owner_profiles table
+    await _client
+        .from('owner_profiles')
+        .update({'phone': newPhone}).eq('auth_id', authId);
   }
 
   static Future<List<Store>> getStoresForUser() async {
@@ -235,7 +162,9 @@ class SupabaseService {
     }
 
     await _client.from('stores').delete().eq('id', storeId).eq(
-        'owner_id', user.id); // Ensure user can only delete their own stores
+          'owner_id',
+          user.id,
+        ); // Ensure user can only delete their own stores
   }
 
   static Future<Store> toggleStoreStatus(String storeId) async {
@@ -260,7 +189,7 @@ class SupabaseService {
         .from('stores')
         .update({
           'status': newStatus,
-          'updated_at': DateTime.now().toIso8601String()
+          'updated_at': DateTime.now().toIso8601String(),
         })
         .eq('id', storeId)
         .eq('owner_id', user.id)
@@ -272,7 +201,8 @@ class SupabaseService {
 
   // Category CRUD operations
   static Future<List<model_category.Category>> getCategoriesForStore(
-      String storeId) async {
+    String storeId,
+  ) async {
     final user = _client.auth.currentUser;
     if (user == null) {
       throw Exception('User not authenticated');
@@ -356,7 +286,8 @@ class SupabaseService {
 
   // SubCategory CRUD operations
   static Future<List<SubCategory>> getSubCategoriesForCategory(
-      String categoryId) async {
+    String categoryId,
+  ) async {
     final user = _client.auth.currentUser;
     if (user == null) {
       throw Exception('User not authenticated');
@@ -619,58 +550,167 @@ class SupabaseService {
   }) async {
     final user = _client.auth.currentUser;
     if (user == null) {
-      throw Exception('User not authenticated');
+      throw Exception('Mtumiaji hajajiandikisha. Tafadhali ingia tena.');
     }
 
-    // Check if products bucket exists
-    final buckets = await _client.storage.listBuckets();
-    Bucket? productsBucket;
-    for (final bucket in buckets) {
-      if (bucket.name == 'products') {
-        productsBucket = bucket;
-        break;
+    // Step 1: Validate file exists
+    final file = File(filePath);
+    if (!await file.exists()) {
+      throw Exception('Faili halipatikani: $filePath');
+    }
+
+    // Step 2: Validate file size (max 10MB for free tier)
+    final fileSize = await file.length();
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (fileSize > maxSize) {
+      throw Exception(
+        'Faili kubwa sana (${(fileSize / 1024 / 1024).toStringAsFixed(1)}MB). Kiwango cha juu: 10MB',
+      );
+    }
+
+    debugPrint(
+      '📤 Kuanza kupakia picha: $fileName (${(fileSize / 1024).toStringAsFixed(1)}KB)',
+    );
+
+    // Step 3: Check if products bucket exists (skip strict validation)
+    try {
+      final buckets = await _client.storage.listBuckets();
+      debugPrint(
+        '📦 Available buckets: ${buckets.map((b) => b.name).toList()}',
+      );
+
+      if (buckets.isNotEmpty) {
+        final productsBucket = buckets.firstWhere(
+          (bucket) => bucket.name == 'products_images',
+          orElse: () => buckets.first,
+        );
+
+        debugPrint(
+          '✅ Using bucket: "${productsBucket.name}" (${productsBucket.public ? "Public" : "Private"})',
+        );
+      } else {
+        debugPrint('⚠️ No buckets found in list, will try uploading anyway...');
       }
+    } catch (e) {
+      debugPrint('⚠️ Bucket check failed: $e - Continuing with upload...');
     }
 
     String mediaUrl = '';
 
-    if (productsBucket != null) {
-      // Upload file to Supabase Storage
-      final fileExt = fileName.split('.').last;
+    try {
+      // Step 4: Prepare file for upload
+      final fileExt = fileName.split('.').last.toLowerCase();
       final fileNameWithoutExt = fileName.split('.').first;
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final storageFileName = '${fileNameWithoutExt}_$timestamp.$fileExt';
 
-      final storageResponse = await _client.storage
-          .from('products')
-          .upload(storageFileName, File(filePath));
+      debugPrint('📎 Jina la faili: $storageFileName');
 
-      if (storageResponse.isEmpty) {
-        throw Exception('Failed to upload file to storage');
+      // Step 5: Upload with retry logic
+      String? uploadPath;
+      int retries = 0;
+      const maxRetries = 2;
+
+      while (retries <= maxRetries) {
+        try {
+          debugPrint('🔄 Jaribio ${retries + 1}/${maxRetries + 1}...');
+
+          uploadPath = await _client.storage
+              .from('products_images')
+              .upload(storageFileName, file);
+
+          debugPrint('✅ Upload imekamilika: $uploadPath');
+          break;
+        } catch (uploadError) {
+          retries++;
+          if (retries > maxRetries) {
+            throw Exception(
+              'Kupakia kumeshindwa baada ya majaribio $maxRetries: $uploadError',
+            );
+          }
+          debugPrint('⚠️ Jaribio ${retries} limeshindwa, tunajaribu tena...');
+          await Future.delayed(Duration(seconds: retries));
+        }
       }
 
-      // Get the public URL using the correct method
-      mediaUrl = _client.storage.from('products').getPublicUrl(storageFileName);
-    } else {
-      // Fallback: Use a placeholder image or handle missing bucket
-      // For now, we'll use a placeholder image URL
-      mediaUrl = 'https://via.placeholder.com/300x300.png?text=No+Image';
-      print('Warning: Products bucket not found. Using placeholder image.');
+      if (uploadPath == null || uploadPath.isEmpty) {
+        throw Exception('Kupakia kumeshindwa: Hakuna majibu kutoka server');
+      }
+
+      // Step 6: Get the public URL
+      mediaUrl =
+          _client.storage.from('products_images').getPublicUrl(storageFileName);
+
+      if (mediaUrl.isEmpty) {
+        throw Exception('Kushindwa kupata URL ya picha');
+      }
+
+      debugPrint('✅ URL ya picha: $mediaUrl');
+
+      // Step 7: Verify URL is accessible (optional but recommended)
+      if (mediaUrl.startsWith('http')) {
+        debugPrint('✅ Picha imehifadhiwa vizuri');
+      } else {
+        debugPrint('⚠️ URL ya picha haionekani sahihi: $mediaUrl');
+      }
+    } catch (e) {
+      debugPrint('❌ Hitilafu wakati wa kupakia: $e');
+
+      // Provide specific error messages
+      final errorStr = e.toString().toLowerCase();
+
+      if (errorStr.contains('bucket') && errorStr.contains('not found')) {
+        throw Exception(
+          'Storage bucket "products_images" haipo. Unda bucket kwenye Supabase Dashboard > Storage',
+        );
+      } else if (errorStr.contains('permission') ||
+          errorStr.contains('policy')) {
+        throw Exception(
+          'Hakuna ruhusa ya kupakia picha. Angalia Storage Policies kwenye Supabase Dashboard',
+        );
+      } else if (errorStr.contains('network') ||
+          errorStr.contains('connection')) {
+        throw Exception('Tatizo la mtandao. Hakikisha uko kwenye intaneti');
+      } else if (errorStr.contains('size') || errorStr.contains('large')) {
+        throw Exception('Picha kubwa sana. Tumia picha ndogo kuliko 10MB');
+      }
+
+      // Generic error
+      throw Exception(
+        'Kushindwa kupakia picha: ${e.toString().replaceAll('Exception: ', '')}',
+      );
     }
 
-    // Insert into product_media table
-    final mediaData = {
-      'product_id': productId,
-      'store_id': storeId,
-      'media_url': mediaUrl,
-      'media_type': mediaType,
-      'is_primary': isPrimary,
-    };
+    // Step 8: Insert into product_media table
+    try {
+      final mediaData = {
+        'product_id': productId,
+        'store_id': storeId,
+        'media_url': mediaUrl,
+        'media_type': mediaType,
+        'is_primary': isPrimary,
+        'sort_order': 0,
+      };
 
-    final response =
-        await _client.from('product_media').insert(mediaData).select().single();
+      debugPrint('💾 Kuhifadhi rekodi ya picha kwenye database...');
 
-    return ProductMedia.fromJson(response);
+      final response = await _client
+          .from('product_media')
+          .insert(mediaData)
+          .select()
+          .single();
+
+      debugPrint('✅ Picha imehifadhiwa kikamilifu!');
+
+      return ProductMedia.fromJson(response);
+    } catch (e) {
+      debugPrint('❌ Kushindwa kuhifadhi rekodi ya picha: $e');
+
+      // Image is uploaded but database record failed - this is recoverable
+      throw Exception(
+        'Picha imepakiwa lakini rekodi haikuhifadhiwa kwenye database: ${e.toString()}',
+      );
+    }
   }
 
   static Future<void> deleteProductMedia(String mediaId) async {
@@ -695,7 +735,9 @@ class SupabaseService {
   }
 
   static Future<void> setPrimaryProductMedia(
-      String mediaId, String productId) async {
+    String mediaId,
+    String productId,
+  ) async {
     final user = _client.auth.currentUser;
     if (user == null) {
       throw Exception('User not authenticated');
@@ -725,8 +767,10 @@ class SupabaseService {
       throw Exception('User not authenticated');
     }
 
-    final totalAmount =
-        cartItems.fold<double>(0, (sum, item) => sum + item.subtotal);
+    final totalAmount = cartItems.fold<double>(
+      0,
+      (sum, item) => sum + item.subtotal,
+    );
 
     // Calculate total profit for the sale
     double totalProfit = 0;
@@ -816,10 +860,7 @@ class SupabaseService {
       final currentProduct = await getProductById(cartItem.productId);
       final newQuantity = (currentProduct.quantity ?? 0) - cartItem.quantity;
 
-      await updateProduct(
-        productId: cartItem.productId,
-        quantity: newQuantity,
-      );
+      await updateProduct(productId: cartItem.productId, quantity: newQuantity);
     }
 
     return sale;
@@ -879,8 +920,10 @@ class SupabaseService {
 
     // Calculate totals
     final totalSales = sales.length;
-    final totalRevenue =
-        sales.fold<double>(0, (sum, sale) => sum + sale.totalAmount);
+    final totalRevenue = sales.fold<double>(
+      0,
+      (sum, sale) => sum + sale.totalAmount,
+    );
     final cashSales =
         sales.where((sale) => sale.paymentMethod == PaymentMethod.cash).length;
     final creditSales = sales
@@ -896,10 +939,7 @@ class SupabaseService {
       'cash_sales': cashSales,
       'credit_sales': creditSales,
       'sales': sales,
-      'date_range': {
-        'start': start,
-        'end': end,
-      },
+      'date_range': {'start': start, 'end': end},
     };
   }
 
@@ -919,8 +959,10 @@ class SupabaseService {
     return (response as List).map((json) => Product.fromJson(json)).toList();
   }
 
-  static Future<List<Sale>> getRecentSales(String storeId,
-      {int limit = 50}) async {
+  static Future<List<Sale>> getRecentSales(
+    String storeId, {
+    int limit = 50,
+  }) async {
     final user = _client.auth.currentUser;
     if (user == null) {
       throw Exception('User not authenticated');
@@ -987,13 +1029,17 @@ class SupabaseService {
         .order('created_at', ascending: false);
 
     if (startDate != null) {
-      query =
-          query.gte('expense_date', startDate.toIso8601String().split('T')[0]);
+      query = query.gte(
+        'expense_date',
+        startDate.toIso8601String().split('T')[0],
+      );
     }
 
     if (endDate != null) {
-      query =
-          query.lte('expense_date', endDate.toIso8601String().split('T')[0]);
+      query = query.lte(
+        'expense_date',
+        endDate.toIso8601String().split('T')[0],
+      );
     }
 
     if (paymentMethod != null && paymentMethod.isNotEmpty) {
@@ -1100,8 +1146,10 @@ class SupabaseService {
     );
 
     final totalExpenses = expenses.length;
-    final totalAmount =
-        expenses.fold<double>(0, (sum, expense) => sum + expense.amount);
+    final totalAmount = expenses.fold<double>(
+      0,
+      (sum, expense) => sum + expense.amount,
+    );
 
     // Group by payment method
     final paymentMethodCounts = <String, int>{};
@@ -1281,10 +1329,14 @@ class SupabaseService {
     final debts = await getDebtsForStore(storeId);
 
     final totalDebts = debts.length;
-    final totalOutstanding =
-        debts.fold<double>(0, (sum, debt) => sum + debt.remainingAmount);
-    final totalPaid =
-        debts.fold<double>(0, (sum, debt) => sum + debt.paidAmount);
+    final totalOutstanding = debts.fold<double>(
+      0,
+      (sum, debt) => sum + debt.remainingAmount,
+    );
+    final totalPaid = debts.fold<double>(
+      0,
+      (sum, debt) => sum + debt.paidAmount,
+    );
 
     // Group by status
     final statusCounts = <String, int>{};
@@ -1303,7 +1355,8 @@ class SupabaseService {
 
   // Customer Credit methods
   static Future<List<CustomerCredit>> getCustomerCreditsForStore(
-      String storeId) async {
+    String storeId,
+  ) async {
     final user = _client.auth.currentUser;
     if (user == null) {
       throw Exception('User not authenticated');
@@ -1377,10 +1430,7 @@ class SupabaseService {
     }
 
     // Update customer credit
-    final updateData = {
-      'paid_amount': newPaidAmount,
-      'status': newStatus,
-    };
+    final updateData = {'paid_amount': newPaidAmount, 'status': newStatus};
 
     final response = await _client
         .from('customer_credits')
@@ -1393,14 +1443,19 @@ class SupabaseService {
   }
 
   static Future<Map<String, dynamic>> getCustomerCreditSummary(
-      String storeId) async {
+    String storeId,
+  ) async {
     final credits = await getCustomerCreditsForStore(storeId);
 
     final totalCredits = credits.length;
-    final totalOutstanding =
-        credits.fold<double>(0, (sum, credit) => sum + credit.balance);
-    final totalPaid =
-        credits.fold<double>(0, (sum, credit) => sum + credit.paidAmount);
+    final totalOutstanding = credits.fold<double>(
+      0,
+      (sum, credit) => sum + credit.balance,
+    );
+    final totalPaid = credits.fold<double>(
+      0,
+      (sum, credit) => sum + credit.paidAmount,
+    );
 
     // Group by status
     final statusCounts = <String, int>{};
@@ -1419,7 +1474,8 @@ class SupabaseService {
 
   // Employee methods
   static Future<List<StoreEmployee>> getEmployeesForStore(
-      String storeId) async {
+    String storeId,
+  ) async {
     final user = _client.auth.currentUser;
     if (user == null) {
       throw Exception('User not authenticated');
@@ -1447,7 +1503,8 @@ class SupabaseService {
     debugPrint('=== getEmployeesForStore Debug ===');
     debugPrint('Store ID: $storeId');
     debugPrint(
-        'Query: SELECT *, employees!inner(*) FROM store_employees WHERE store_id = $storeId AND employees.is_active = true');
+      'Query: SELECT *, employees!inner(*) FROM store_employees WHERE store_id = $storeId AND employees.is_active = true',
+    );
     debugPrint('Total employees (before filtering): $totalCount');
     debugPrint('Active employees (after filtering): $filteredCount');
     debugPrint('Excluded deactivated employees: ${totalCount - filteredCount}');
@@ -1547,9 +1604,7 @@ class SupabaseService {
       throw Exception('User not authenticated');
     }
 
-    final updateData = {
-      'role': role.value,
-    };
+    final updateData = {'role': role.value};
 
     final response = await _client
         .from('store_employees')
@@ -1621,7 +1676,8 @@ class SupabaseService {
             .update({'is_active': false}).eq('id', employeeId);
       } catch (deactivateError) {
         throw Exception(
-            'Unable to delete or deactivate employee: $deactivateError');
+          'Unable to delete or deactivate employee: $deactivateError',
+        );
       }
     }
   }
@@ -1652,6 +1708,18 @@ class SupabaseService {
     );
   }
 
+  static Future<Employee> updateEmployeePhone({
+    required String employeeId,
+    required String newPhone,
+  }) async {
+    final user = _client.auth.currentUser;
+    if (user == null) {
+      throw Exception('User not authenticated');
+    }
+
+    return await updateEmployee(employeeId: employeeId, phone: newPhone);
+  }
+
   static Future<void> permanentlyDeleteEmployee(String employeeId) async {
     final user = _client.auth.currentUser;
     if (user == null) {
@@ -1676,7 +1744,8 @@ class SupabaseService {
         debugPrint('Details: ${e.details}');
         debugPrint('Hint: ${e.hint}');
         throw Exception(
-            'Employee deactivation failed (${e.code}): ${e.message} — ${e.details}');
+          'Employee deactivation failed (${e.code}): ${e.message} — ${e.details}',
+        );
       } else if (e is AuthException) {
         // Handle AuthException specifically
         debugPrint('AuthException during employee deletion: ${e.message}');
@@ -1695,15 +1764,19 @@ class SupabaseService {
             debugPrint('Details: ${deactivateError.details}');
             debugPrint('Hint: ${deactivateError.hint}');
             throw Exception(
-                'Employee deactivation failed (${deactivateError.code}): ${deactivateError.message} — ${deactivateError.details}');
+              'Employee deactivation failed (${deactivateError.code}): ${deactivateError.message} — ${deactivateError.details}',
+            );
           } else if (deactivateError is AuthException) {
             debugPrint(
-                'AuthException during deactivation: ${deactivateError.message}');
+              'AuthException during deactivation: ${deactivateError.message}',
+            );
             throw Exception(
-                'Employee deactivation failed: ${deactivateError.message}');
+              'Employee deactivation failed: ${deactivateError.message}',
+            );
           } else {
             throw Exception(
-                'Unable to delete or deactivate employee: $deactivateError');
+              'Unable to delete or deactivate employee: $deactivateError',
+            );
           }
         }
       }

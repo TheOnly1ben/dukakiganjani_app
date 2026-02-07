@@ -261,22 +261,6 @@ class _OwnerRegisterPageState extends State<OwnerRegisterPage> {
           ),
           const SizedBox(height: 16),
           _buildPhoneField(),
-          const SizedBox(height: 16),
-          _buildTextField(
-            controller: _securityAnswerController,
-            label: 'Jina la kwanza la duka ni lipi?',
-            hint: 'Jina la duka lako la kwanza',
-            icon: Icons.store_outlined,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Tafadhali ingiza jina la duka lako la kwanza';
-              }
-              if (value.length < 2) {
-                return 'Jina ni fupi sana';
-              }
-              return null;
-            },
-          ),
         ],
       ),
     );
@@ -653,8 +637,6 @@ class _OwnerRegisterPageState extends State<OwnerRegisterPage> {
         String? email =
             _emailController.text.isNotEmpty ? _emailController.text : null;
         String phone = _phoneController.text;
-        String securityAnswer =
-            _securityAnswerController.text.trim().toLowerCase();
         String pin = _pinController.text;
 
         // Perform registration (auth + profile creation)
@@ -663,7 +645,6 @@ class _OwnerRegisterPageState extends State<OwnerRegisterPage> {
           phone: phone,
           pin: pin,
           email: email,
-          securityAnswer: securityAnswer,
         );
 
         if (response.user != null) {

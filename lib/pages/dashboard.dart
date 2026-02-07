@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -22,6 +23,25 @@ class OwnerDashboardPage extends StatelessWidget {
     Key? key,
     required this.store,
   }) : super(key: key);
+
+  Future<Map<String, dynamic>?> _getOwnerProfile(BuildContext context) async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final user = authService.currentUser;
+
+    if (user != null) {
+      try {
+        final response = await Supabase.instance.client
+            .from('owner_profiles')
+            .select('phone')
+            .eq('auth_id', user.id)
+            .single();
+        return response;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -122,6 +142,10 @@ class OwnerDashboardPage extends StatelessWidget {
 
                 // Store Stats
                 _buildStoreStats(),
+                const SizedBox(height: 16),
+
+                // Change Phone Button
+                _buildChangePhoneButton(context),
               ],
             ),
           ),
@@ -354,6 +378,204 @@ class OwnerDashboardPage extends StatelessWidget {
     );
   }
 
+  Widget _buildChangePhoneButton(BuildContext context) {
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: _getOwnerProfile(context),
+      builder: (context, snapshot) {
+        final ownerPhone = snapshot.data?['phone'] as String?;
+
+        return Center(
+          child: OutlinedButton.icon(
+            onPressed: () => _showOwnerChangePhoneDialog(context, ownerPhone),
+            icon: const Icon(Icons.phone, size: 18),
+            label: Text('dashboard.change_phone'.tr()),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF00C853),
+              side: const BorderSide(color: Color(0xFF00C853)),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showOwnerChangePhoneDialog(BuildContext context, String? currentPhone) {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final user = authService.currentUser;
+
+    final TextEditingController currentPhoneController =
+        TextEditingController();
+    final TextEditingController newPhoneController = TextEditingController();
+    final TextEditingController confirmPhoneController =
+        TextEditingController();
+
+    // Pre-fill current phone if available
+    if (currentPhone != null) {
+      currentPhoneController.text = currentPhone;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('dashboard.change_phone'.tr()),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: currentPhoneController,
+                decoration: InputDecoration(
+                  labelText: 'dashboard.current_phone'.tr(),
+                  border: const OutlineInputBorder(),
+                  prefixText: '+255 ',
+                ),
+                keyboardType: TextInputType.phone,
+                maxLength: 9,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'dashboard.enter_current_phone'.tr();
+                  }
+                  if (value.length != 9) {
+                    return 'dashboard.phone_must_valid'.tr();
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: newPhoneController,
+                decoration: InputDecoration(
+                  labelText: 'dashboard.new_phone'.tr(),
+                  border: const OutlineInputBorder(),
+                  prefixText: '+255 ',
+                ),
+                keyboardType: TextInputType.phone,
+                maxLength: 9,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'dashboard.enter_new_phone'.tr();
+                  }
+                  if (value.length != 9) {
+                    return 'dashboard.phone_must_valid'.tr();
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: confirmPhoneController,
+                decoration: InputDecoration(
+                  labelText: 'dashboard.confirm_new_phone'.tr(),
+                  border: const OutlineInputBorder(),
+                  prefixText: '+255 ',
+                ),
+                keyboardType: TextInputType.phone,
+                maxLength: 9,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'dashboard.confirm_new_phone_req'.tr();
+                  }
+                  if (value != newPhoneController.text) {
+                    return 'dashboard.phones_not_match'.tr();
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('dashboard.cancel'.tr()),
+          ),
+          Builder(
+            builder: (dialogContext) => ElevatedButton(
+              onPressed: () => _ownerChangePhone(
+                dialogContext,
+                currentPhone,
+                newPhoneController.text,
+                confirmPhoneController.text,
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00C853),
+              ),
+              child: Text('dashboard.change_phone'.tr()),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _ownerChangePhone(
+    BuildContext context,
+    String? currentPhone,
+    String newPhone,
+    String confirmPhone,
+  ) async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final user = authService.currentUser;
+
+    // Validate inputs
+    if (newPhone.isEmpty || confirmPhone.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('dashboard.enter_all_fields'.tr())),
+      );
+      return;
+    }
+
+    if (newPhone.length != 9 || confirmPhone.length != 9) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('dashboard.phone_must_valid'.tr())),
+      );
+      return;
+    }
+
+    if (newPhone != confirmPhone) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('dashboard.phones_not_match'.tr())),
+      );
+      return;
+    }
+
+    if (currentPhone != null && currentPhone == newPhone) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('dashboard.phone_diff_from_current'.tr())),
+      );
+      return;
+    }
+
+    try {
+      // Update phone number in the database
+      if (user?.id != null) {
+        await SupabaseService.updateOwnerPhone(
+          authId: user!.id,
+          newPhone: newPhone,
+        );
+      }
+
+      // Close dialog
+      if (context.mounted) Navigator.of(context).pop();
+
+      // Show success message
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('dashboard.phone_changed_success'.tr())),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content:
+                  Text('dashboard.change_phone'.tr() + ': ${e.toString()}')),
+        );
+      }
+    }
+  }
+
   Widget _buildStoreStats() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -486,7 +708,7 @@ class OwnerDashboardPage extends StatelessWidget {
 }
 
 // Employee Dashboard Page - Limited functionality for employees
-class EmployeeDashboardPage extends StatelessWidget {
+class EmployeeDashboardPage extends StatefulWidget {
   final Store store;
   final Employee employee;
 
@@ -495,6 +717,117 @@ class EmployeeDashboardPage extends StatelessWidget {
     required this.store,
     required this.employee,
   }) : super(key: key);
+
+  @override
+  State<EmployeeDashboardPage> createState() => _EmployeeDashboardPageState();
+}
+
+class _EmployeeDashboardPageState extends State<EmployeeDashboardPage> {
+  EmployeeRole? _employeeRole;
+  bool _isLoadingRole = true;
+  Timer? _statusCheckTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEmployeeRole();
+    _startStatusCheck();
+  }
+
+  @override
+  void dispose() {
+    _statusCheckTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startStatusCheck() {
+    // Check employee status every 30 seconds
+    _statusCheckTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      _checkEmployeeStatus();
+    });
+  }
+
+  Future<void> _checkEmployeeStatus() async {
+    try {
+      final response = await Supabase.instance.client
+          .from('employees')
+          .select('is_active')
+          .eq('id', widget.employee.id)
+          .single();
+
+      final isActive = response['is_active'] as bool? ?? false;
+
+      if (!isActive && mounted) {
+        // Employee has been deactivated - force logout
+        _statusCheckTimer?.cancel();
+        final authService = Provider.of<AuthService>(context, listen: false);
+        await authService.logout();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content:
+                  Text('Akaunti yako imesimamishwa. Wasiliana na mmiliki.'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+          // Navigate to login screen
+          Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+        }
+      }
+    } catch (e) {
+      // Silently fail - don't disrupt user experience for network issues
+      debugPrint('Status check failed: $e');
+    }
+  }
+
+  Future<void> _loadEmployeeRole() async {
+    try {
+      final storeEmployees =
+          await SupabaseService.getEmployeesForStore(widget.store.id);
+      final storeEmployee = storeEmployees.firstWhere(
+        (se) => se.employeeId == widget.employee.id,
+        orElse: () => storeEmployees.first,
+      );
+      setState(() {
+        _employeeRole = storeEmployee.role;
+        _isLoadingRole = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingRole = false;
+      });
+    }
+  }
+
+  String _getRoleDisplayName() {
+    if (_employeeRole == null) return 'dashboard.employee'.tr();
+    switch (_employeeRole!) {
+      case EmployeeRole.manager:
+        return 'Meneja';
+      case EmployeeRole.cashier:
+        return 'Karani';
+      case EmployeeRole.staff:
+        return 'Mfanyakazi';
+      case EmployeeRole.owner:
+        return 'Mmiliki';
+    }
+  }
+
+  Color _getRoleColor() {
+    if (_employeeRole == null) return const Color(0xFF00C853);
+    switch (_employeeRole!) {
+      case EmployeeRole.manager:
+        return Colors.blue;
+      case EmployeeRole.cashier:
+        return Colors.green;
+      case EmployeeRole.staff:
+        return Colors.orange;
+      case EmployeeRole.owner:
+        return Colors.purple;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -508,7 +841,7 @@ class EmployeeDashboardPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              store.name,
+              widget.store.name,
               style: const TextStyle(
                 color: Color(0xFF1A1A1A),
                 fontSize: 18,
@@ -517,7 +850,7 @@ class EmployeeDashboardPage extends StatelessWidget {
             ),
             const SizedBox(height: 2),
             Text(
-              'dashboard.welcome_back'.tr(args: [employee.fullName]),
+              'dashboard.welcome_back'.tr(args: [widget.employee.fullName]),
               style: TextStyle(
                 color: Colors.grey.shade600,
                 fontSize: 13,
@@ -538,7 +871,7 @@ class EmployeeDashboardPage extends StatelessWidget {
             margin: const EdgeInsets.only(right: 16),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: const Color(0xFF00C853).withOpacity(0.1),
+              color: _getRoleColor().withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -546,20 +879,30 @@ class EmployeeDashboardPage extends StatelessWidget {
                 Container(
                   width: 6,
                   height: 6,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF00C853),
+                  decoration: BoxDecoration(
+                    color: _getRoleColor(),
                     shape: BoxShape.circle,
                   ),
                 ),
                 const SizedBox(width: 6),
-                Text(
-                  'dashboard.employee'.tr(),
-                  style: const TextStyle(
-                    color: Color(0xFF00C853),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                _isLoadingRole
+                    ? SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(_getRoleColor()),
+                        ),
+                      )
+                    : Text(
+                        _getRoleDisplayName(),
+                        style: TextStyle(
+                          color: _getRoleColor(),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
               ],
             ),
           ),
@@ -615,7 +958,7 @@ class EmployeeDashboardPage extends StatelessWidget {
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => InventoryPage(store: store),
+                    builder: (context) => InventoryPage(store: widget.store),
                   ),
                 );
               },
@@ -626,7 +969,7 @@ class EmployeeDashboardPage extends StatelessWidget {
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => SalesPage(store: store),
+                    builder: (context) => SalesPage(store: widget.store),
                   ),
                 );
               },
@@ -638,8 +981,8 @@ class EmployeeDashboardPage extends StatelessWidget {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => EmployeeSalesPage(
-                      store: store,
-                      employee: employee,
+                      store: widget.store,
+                      employee: widget.employee,
                     ),
                   ),
                 );
@@ -651,7 +994,29 @@ class EmployeeDashboardPage extends StatelessWidget {
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => CategoryPage(store: store),
+                    builder: (context) => CategoryPage(store: widget.store),
+                  ),
+                );
+              },
+            ),
+            _buildActionButton(
+              icon: Icons.credit_card,
+              label: 'debts.title'.tr(),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => DebtsPage(store: widget.store),
+                  ),
+                );
+              },
+            ),
+            _buildActionButton(
+              icon: Icons.attach_money,
+              label: 'expenses.title'.tr(),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => ExpensesPage(store: widget.store),
                   ),
                 );
               },
@@ -736,19 +1101,20 @@ class EmployeeDashboardPage extends StatelessWidget {
           ),
           child: Column(
             children: [
-              _buildInfoRow('dashboard.name'.tr(), employee.fullName),
+              _buildInfoRow('dashboard.name'.tr(), widget.employee.fullName),
               _buildDivider(),
-              _buildInfoRow('dashboard.username'.tr(), employee.username),
+              _buildInfoRow(
+                  'dashboard.username'.tr(), widget.employee.username),
               _buildDivider(),
-              _buildInfoRow('dashboard.role'.tr(), 'dashboard.employee'.tr()),
-              if (employee.phone != null) ...[
+              _buildInfoRow('dashboard.role'.tr(), _getRoleDisplayName()),
+              if (widget.employee.phone != null) ...[
                 _buildDivider(),
-                _buildInfoRow('dashboard.phone'.tr(), employee.phone!),
+                _buildInfoRow('dashboard.phone'.tr(), widget.employee.phone!),
               ],
               _buildDivider(),
               _buildInfoRow(
                   'dashboard.status'.tr(),
-                  employee.isActive
+                  widget.employee.isActive
                       ? 'dashboard.active'.tr()
                       : 'dashboard.inactive'.tr()),
               const SizedBox(height: 16),
@@ -910,7 +1276,7 @@ class EmployeeDashboardPage extends StatelessWidget {
 
     try {
       // Verify current PIN by attempting authentication
-      final fakeEmail = '${employee.username}@dukakiganjani.com';
+      final fakeEmail = '${widget.employee.username}@dukakiganjani.com';
       final currentPassword = '$currentPin@dukakiganjani';
 
       final authResponse =
@@ -974,15 +1340,15 @@ class EmployeeDashboardPage extends StatelessWidget {
           ),
           child: Column(
             children: [
-              _buildInfoRow('Store Name', store.name),
+              _buildInfoRow('Store Name', widget.store.name),
               _buildDivider(),
-              _buildInfoRow('Type', store.type),
-              if (store.location != null) ...[
+              _buildInfoRow('Type', widget.store.type),
+              if (widget.store.location != null) ...[
                 _buildDivider(),
-                _buildInfoRow('Location', store.location!),
+                _buildInfoRow('Location', widget.store.location!),
               ],
               _buildDivider(),
-              _buildInfoRow('Status', store.status),
+              _buildInfoRow('Status', widget.store.status),
             ],
           ),
         ),

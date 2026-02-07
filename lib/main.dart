@@ -1,8 +1,8 @@
-import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState, AuthUser;
+import 'package:supabase_flutter/supabase_flutter.dart'
+    hide AuthState, AuthUser;
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
@@ -13,6 +13,7 @@ import 'auth/owner_register.dart';
 import 'pages/store_list.dart';
 import 'pages/dashboard.dart';
 import 'services/auth_service.dart';
+import 'services/notification_service.dart';
 
 // Custom HTTP client that logs all requests and responses
 class LoggingHttpClient extends http.BaseClient {
@@ -32,7 +33,8 @@ class LoggingHttpClient extends http.BaseClient {
       final response = await _inner.send(request);
 
       // Log response
-      debugPrint('📥 HTTP Response: ${response.statusCode} ${response.reasonPhrase}');
+      debugPrint(
+          '📥 HTTP Response: ${response.statusCode} ${response.reasonPhrase}');
       if (response.headers.isNotEmpty) {
         debugPrint('📋 Response Headers: ${response.headers}');
       }
@@ -76,10 +78,10 @@ void main() async {
   }
 
   // Get Supabase credentials from environment variables with fallback
-  final supabaseUrl = dotenv.env['SUPABASE_URL'] ??
-                     'https://qzeeggpkjqoqwqskxotq.supabase.co';
+  final supabaseUrl =
+      dotenv.env['SUPABASE_URL'] ?? 'https://qzeeggpkjqoqwqskxotq.supabase.co';
   final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'] ??
-                         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6ZWVnZ3BranFvcXdxc2t4b3RxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2MjA2MTIsImV4cCI6MjA4MzE5NjYxMn0.V55wn1GdjAMTaI1RqkEd6aW9KLlanEarU0S4kmXwirw';
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6ZWVnZ3BranFvcXdxc2t4b3RxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2MjA2MTIsImV4cCI6MjA4MzE5NjYxMn0.V55wn1GdjAMTaI1RqkEd6aW9KLlanEarU0S4kmXwirw';
 
   if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
     throw Exception('Supabase credentials not found');
@@ -98,6 +100,14 @@ void main() async {
   // Initialize AuthService
   final authService = AuthService();
   await authService.initialize();
+
+  // Initialize NotificationService
+  final notificationService = NotificationService();
+  await notificationService.initialize();
+
+  // Schedule daily reminders (optional - can be enabled/disabled by user later)
+  // await notificationService.scheduleOpeningReminder();
+  // await notificationService.scheduleClosingReminder();
 
   // Enable edge-to-edge display
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -120,10 +130,7 @@ void main() async {
       path: 'assets/translations',
       startLocale: const Locale('sw'),
       fallbackLocale: const Locale('sw'),
-      child: ChangeNotifierProvider.value(
-        value: authService,
-        child: const MyApp(),
-      ),
+      child: ChangeNotifierProvider.value(value: authService, child: const MyApp(),),
     ),
   );
 }
@@ -132,20 +139,56 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   // This widget is the root of your application.
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Duka Ganjani',
+  @override Widget build(BuildContext context) { return MaterialApp(debugShowCheckedModeBanner: false, title: 'Duka Kiganjani',
       localizationsDelegates: context.localizationDelegates,
       supportedLocales: context.supportedLocales,
       routes: {
         '/owner_login': (context) => const OwnerLoginPage(),
         '/owner_register': (context) => const OwnerRegisterPage(),
-        '/employee_login': (context) =>  EmployeeLoginPage(),
+        '/employee_login': (context) => EmployeeLoginPage(),
         '/store_list': (context) => const StoreListPage(),
       },
       home: const AuthWrapper(),
+    );
+  }
+
+  ThemeData _buildLightTheme() {
+    return ThemeData(
+      brightness: Brightness.light,
+      primaryColor: const Color(0xFF00C853),
+      scaffoldBackgroundColor: Colors.white,
+      cardColor: Colors.white,
+      colorScheme: ColorScheme.light(
+        primary: const Color(0xFF00C853),
+        secondary: const Color(0xFF00C853),
+        surface: Colors.white,
+        background: Colors.white,
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.white,
+        foregroundColor: Color(0xFF1A1A1A),
+        elevation: 0,
+      ),
+    );
+  }
+
+  ThemeData _buildDarkTheme() {
+    return ThemeData(
+      brightness: Brightness.dark,
+      primaryColor: const Color(0xFF00C853),
+      scaffoldBackgroundColor: const Color(0xFF121212),
+      cardColor: const Color(0xFF1E1E1E),
+      colorScheme: ColorScheme.dark(
+        primary: const Color(0xFF00C853),
+        secondary: const Color(0xFF00C853),
+        surface: const Color(0xFF1E1E1E),
+        background: const Color(0xFF121212),
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFF1E1E1E),
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
     );
   }
 }
@@ -170,7 +213,6 @@ class AuthWrapper extends StatelessWidget {
             return _buildOfflineAuthenticatedScreen(context, authService);
           case AuthState.unauthenticated:
           case AuthState.error:
-          default:
             return OnboardingPage();
         }
       },
@@ -184,7 +226,8 @@ class AuthWrapper extends StatelessWidget {
     } else {
       // Employee - go to employee dashboard
       if (user.store != null) {
-        return EmployeeDashboardPage(store: user.store!, employee: user.employee!);
+        return EmployeeDashboardPage(
+            store: user.store!, employee: user.employee!);
       } else {
         // No store assigned, go back to login
         return EmployeeLoginPage();
@@ -192,8 +235,8 @@ class AuthWrapper extends StatelessWidget {
     }
   }
 
-  Widget _buildOfflineAuthenticatedScreen(BuildContext context, AuthService authService) {
-    final user = authService.currentUser!;
+  Widget _buildOfflineAuthenticatedScreen(
+      BuildContext context, AuthService authService) {
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -230,11 +273,13 @@ class AuthWrapper extends StatelessWidget {
                 onPressed: () async {
                   await authService.logout();
                   // Clear navigation stack and go back to onboarding page
-                  Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+                  Navigator.of(context)
+                      .pushNamedAndRemoveUntil('/', (route) => false);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                 ),
                 child: const Text('Logout'),
               ),
@@ -253,3 +298,5 @@ class AuthWrapper extends StatelessWidget {
     );
   }
 }
+
+

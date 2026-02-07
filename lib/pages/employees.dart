@@ -4,6 +4,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/services.dart';
 import '../model/store.dart';
 import '../model/employees.dart';
+import '../services/offline_data_service.dart';
 import '../services/supabase_service.dart';
 
 extension StringExtension on String {
@@ -40,7 +41,8 @@ class _EmployeesPageState extends State<EmployeesPage> {
 
     try {
       debugPrint('📋 Loading employees for store: ${widget.store.id}');
-      final storeEmployees = await SupabaseService.getEmployeesForStore(widget.store.id);
+      final storeEmployees =
+          await OfflineDataService.getEmployeesForStore(widget.store.id);
       debugPrint('✅ Successfully loaded ${storeEmployees.length} employees');
       setState(() {
         _storeEmployees = storeEmployees;
@@ -114,7 +116,8 @@ class _EmployeesPageState extends State<EmployeesPage> {
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A), size: 22),
+          icon:
+              const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A), size: 22),
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
@@ -129,9 +132,11 @@ class _EmployeesPageState extends State<EmployeesPage> {
           : _storeEmployees.isEmpty
               ? _buildEmptyState()
               : ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 80), // Padding for bottom button
+                  padding: const EdgeInsets.fromLTRB(
+                      16, 16, 16, 80), // Padding for bottom button
                   itemCount: _storeEmployees.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 12),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final storeEmployee = _storeEmployees[index];
                     return InkWell(
@@ -219,11 +224,15 @@ class _EmployeesPageState extends State<EmployeesPage> {
                     ? const Color(0xFF00C853).withOpacity(0.1)
                     : Colors.grey.shade300,
                 child: Text(
-                  storeEmployee.displayName.isNotEmpty ? storeEmployee.displayName[0].toUpperCase() : '?',
+                  storeEmployee.displayName.isNotEmpty
+                      ? storeEmployee.displayName[0].toUpperCase()
+                      : '?',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
-                    color: isActive ? const Color(0xFF00C853) : Colors.grey.shade600,
+                    color: isActive
+                        ? const Color(0xFF00C853)
+                        : Colors.grey.shade600,
                   ),
                 ),
               ),
@@ -242,7 +251,8 @@ class _EmployeesPageState extends State<EmployeesPage> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'employees.role_label'.tr(args: [storeEmployee.role.value]),
+                      'employees.role_label'
+                          .tr(args: [storeEmployee.role.value]),
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey.shade600,
@@ -255,7 +265,8 @@ class _EmployeesPageState extends State<EmployeesPage> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: _getRoleColor(storeEmployee.role).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
@@ -271,21 +282,84 @@ class _EmployeesPageState extends State<EmployeesPage> {
                   ),
                   const SizedBox(height: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: isActive ? Colors.green.shade100 : Colors.red.shade100,
+                      color: isActive
+                          ? Colors.green.shade100
+                          : Colors.red.shade100,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      isActive ? 'employees.active'.tr() : 'employees.inactive'.tr(),
+                      isActive
+                          ? 'employees.active'.tr()
+                          : 'employees.inactive'.tr(),
                       style: TextStyle(
                         fontSize: 10,
-                        color: isActive ? Colors.green.shade800 : Colors.red.shade800,
+                        color: isActive
+                            ? Colors.green.shade800
+                            : Colors.red.shade800,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
                 ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Divider(height: 1),
+          const SizedBox(height: 12),
+          // Username with copy button
+          Row(
+            children: [
+              const Icon(Icons.badge, color: Color(0xFF00C853), size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Jina la Mtumiaji',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      storeEmployee.employee?.username ?? 'N/A',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.copy, size: 18),
+                color: const Color(0xFF00C853),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: () {
+                  final username = storeEmployee.employee?.username ?? '';
+                  if (username.isNotEmpty) {
+                    Clipboard.setData(ClipboardData(text: username));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content:
+                            Text('Jina la mtumiaji limenakiliwa: $username'),
+                        backgroundColor: const Color(0xFF00C853),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        margin: const EdgeInsets.all(16),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                },
               ),
             ],
           ),
@@ -303,7 +377,6 @@ class _EmployeesPageState extends State<EmployeesPage> {
       case EmployeeRole.cashier:
         return Colors.green;
       case EmployeeRole.staff:
-      default:
         return Colors.orange;
     }
   }
@@ -314,7 +387,8 @@ class AddEmployeeDialog extends StatefulWidget {
   final StoreEmployee? storeEmployee;
   final Store? store;
 
-  const AddEmployeeDialog({Key? key, this.storeEmployee, this.store}) : super(key: key);
+  const AddEmployeeDialog({Key? key, this.storeEmployee, this.store})
+      : super(key: key);
 
   @override
   State<AddEmployeeDialog> createState() => _AddEmployeeDialogState();
@@ -341,7 +415,9 @@ class _AddEmployeeDialogState extends State<AddEmployeeDialog> {
     if (widget.storeEmployee != null) {
       final currentRole = widget.storeEmployee!.role;
       // Ensure the selected role is valid, defaulting to staff if not
-      _selectedRole = _dropdownRoles.contains(currentRole) ? currentRole : EmployeeRole.staff;
+      _selectedRole = _dropdownRoles.contains(currentRole)
+          ? currentRole
+          : EmployeeRole.staff;
       _fullNameController.text = widget.storeEmployee!.displayName;
       _usernameController.text = widget.storeEmployee!.username ?? '';
       _phoneController.text = widget.storeEmployee!.phone ?? '';
@@ -364,7 +440,8 @@ class _AddEmployeeDialogState extends State<AddEmployeeDialog> {
     final fullName = _fullNameController.text.trim();
     if (fullName.isNotEmpty) {
       final names = fullName.split(' ');
-      final firstName = names[0].toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+      final firstName =
+          names[0].toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
 
       final randomCode = _generateRandomCode();
       _usernameController.text = '$firstName$randomCode';
@@ -377,7 +454,8 @@ class _AddEmployeeDialogState extends State<AddEmployeeDialog> {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
     final random = Random();
     return String.fromCharCodes(
-      Iterable.generate(4, (_) => chars.codeUnitAt(random.nextInt(chars.length))),
+      Iterable.generate(
+          4, (_) => chars.codeUnitAt(random.nextInt(chars.length))),
     );
   }
 
@@ -395,7 +473,8 @@ class _AddEmployeeDialogState extends State<AddEmployeeDialog> {
         );
       } else {
         // Add new employee to store
-        if (widget.store == null) throw Exception('Store information not available');
+        if (widget.store == null)
+          throw Exception('Store information not available');
 
         final newEmployee = await SupabaseService.createEmployee(
           fullName: _fullNameController.text.trim(),
@@ -414,7 +493,9 @@ class _AddEmployeeDialogState extends State<AddEmployeeDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(widget.storeEmployee != null ? 'employees.update_success'.tr() : 'employees.add_success'.tr()),
+            content: Text(widget.storeEmployee != null
+                ? 'employees.update_success'.tr()
+                : 'employees.add_success'.tr()),
             backgroundColor: Colors.green,
           ),
         );
@@ -443,7 +524,9 @@ class _AddEmployeeDialogState extends State<AddEmployeeDialog> {
     final isEditing = widget.storeEmployee != null;
 
     return AlertDialog(
-      title: Text(isEditing ? 'employees.edit_role_title'.tr() : 'employees.add_employee_title'.tr()),
+      title: Text(isEditing
+          ? 'employees.edit_role_title'.tr()
+          : 'employees.add_employee_title'.tr()),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -454,7 +537,8 @@ class _AddEmployeeDialogState extends State<AddEmployeeDialog> {
               if (!isEditing) ...[
                 TextFormField(
                   controller: _fullNameController,
-                  decoration: InputDecoration(labelText: 'employees.full_name_label'.tr()),
+                  decoration: InputDecoration(
+                      labelText: 'employees.full_name_label'.tr()),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'employees.full_name_required'.tr();
@@ -465,19 +549,22 @@ class _AddEmployeeDialogState extends State<AddEmployeeDialog> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _usernameController,
-                  decoration: InputDecoration(labelText: 'employees.username_label_form'.tr()),
+                  decoration: InputDecoration(
+                      labelText: 'employees.username_label_form'.tr()),
                   readOnly: true,
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _phoneController,
-                  decoration: InputDecoration(labelText: 'employees.phone_label'.tr()),
+                  decoration:
+                      InputDecoration(labelText: 'employees.phone_label'.tr()),
                   keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _pinController,
-                  decoration: InputDecoration(labelText: 'employees.pin_label'.tr()),
+                  decoration:
+                      InputDecoration(labelText: 'employees.pin_label'.tr()),
                   keyboardType: TextInputType.number,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -512,7 +599,8 @@ class _AddEmployeeDialogState extends State<AddEmployeeDialog> {
                 },
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
               ),
             ],
@@ -527,7 +615,10 @@ class _AddEmployeeDialogState extends State<AddEmployeeDialog> {
         ElevatedButton(
           onPressed: _isLoading ? null : _saveEmployee,
           child: _isLoading
-              ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2))
               : Text('employees.save'.tr()),
         ),
       ],
@@ -583,16 +674,161 @@ class EmployeeDetailsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isActive = storeEmployee.employee?.isActive ?? false;
+    final username = storeEmployee.employee?.username ?? '';
+    final fullName =
+        storeEmployee.employee?.fullName ?? storeEmployee.displayName;
+    final phone = storeEmployee.employee?.phone ?? '';
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(storeEmployee.displayName, style: Theme.of(context).textTheme.headlineSmall),
+          Text(storeEmployee.displayName,
+              style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 8),
-          Text(storeEmployee.role.value, style: Theme.of(context).textTheme.titleMedium),
+          Text(storeEmployee.role.value,
+              style: Theme.of(context).textTheme.titleMedium),
           const Divider(height: 24),
+
+          // Full Name (Jina)
+          Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F5F5),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.person, color: Color(0xFF00C853), size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Jina',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        fullName,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Phone (Simu)
+          if (phone.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.phone, color: Color(0xFF00C853), size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Simu',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          phone,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // Copy Username/ID
+          if (username.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.badge, color: Color(0xFF00C853), size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Jina la Mtumiaji (ID)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          username,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.copy, size: 20),
+                    color: const Color(0xFF00C853),
+                    onPressed: () {
+                      Clipboard.setData(ClipboardData(text: username));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content:
+                              Text('Jina la mtumiaji limenakiliwa: $username'),
+                          backgroundColor: const Color(0xFF00C853),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                          margin: const EdgeInsets.all(16),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+          const SizedBox(height: 8),
           ListTile(
             leading: const Icon(Icons.edit),
             title: Text('employees.edit_role_title'.tr()),
@@ -600,12 +836,15 @@ class EmployeeDetailsSheet extends StatelessWidget {
           ),
           ListTile(
             leading: Icon(isActive ? Icons.toggle_off : Icons.toggle_on),
-            title: Text(isActive ? 'employees.deactivate'.tr() : 'employees.activate'.tr()),
+            title: Text(isActive
+                ? 'employees.deactivate'.tr()
+                : 'employees.activate'.tr()),
             onTap: () => _toggleStatus(context),
           ),
           ListTile(
             leading: const Icon(Icons.delete, color: Colors.red),
-            title: Text('employees.remove_employee'.tr(), style: const TextStyle(color: Colors.red)),
+            title: Text('employees.remove_employee'.tr(),
+                style: const TextStyle(color: Colors.red)),
             onTap: () => _deleteEmployee(context),
           ),
         ],

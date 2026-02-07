@@ -25,7 +25,8 @@
   },
   "employee_login": {
     "id_label": "Employee ID or Phone Number",
-    "enter_pin": "Enter PIN"
+    "enter_pin": "Enter PIN",
+    "pin_label": "PIN"
   },
   "register": {
     "title": "Create Account",
@@ -131,6 +132,17 @@
     "pin_must_4_digits": "PIN must be exactly 4 digits",
     "pin_diff_from_current": "New PIN must be different from current PIN",
     "pin_changed_success": "PIN changed successfully",
+    "change_phone": "Change Phone Number",
+    "current_phone": "Current Phone Number",
+    "new_phone": "New Phone Number",
+    "confirm_new_phone": "Confirm New Phone",
+    "enter_current_phone": "Please enter current phone number",
+    "enter_new_phone": "Please enter new phone number",
+    "confirm_new_phone_req": "Please confirm new phone number",
+    "phones_not_match": "New phone numbers do not match",
+    "phone_must_valid": "Phone number must be valid (9 digits)",
+    "phone_diff_from_current": "New phone number must be different from current",
+    "phone_changed_success": "Phone number changed successfully",
     "logout": "Logout",
     "logout_confirm": "Are you sure you want to logout?",
     "cancel": "Cancel",
@@ -222,7 +234,13 @@
     "total_debts": "Total Outstanding",
     "total_paid": "Total Paid",
     "payment_successful": "Payment recorded successfully",
-    "debt_paid_off": "Debt paid off completely!"
+    "debt_paid_off": "Debt paid off completely!",
+    "cash": "Cash",
+    "mpesa": "M-Pesa",
+    "tigo_pesa": "Tigo Pesa",
+    "bank": "Bank",
+    "cheque": "Cheque",
+    "other": "Other"
   },
   "products": {
     "product_details": "Product Details",

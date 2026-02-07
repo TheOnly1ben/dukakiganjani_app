@@ -25,7 +25,8 @@
   },
   "employee_login": {
     "id_label": "ID ya Mfanyakazi au Namba ya Simu",
-    "enter_pin": "Ingiza PIN"
+    "enter_pin": "Ingiza PIN",
+    "pin_label": "Nambari ya Siri (PIN)"
   },
   "register": {
     "title": "Tengeneza Akaunti",
@@ -140,6 +141,17 @@
     "pin_must_4_digits": "PIN lazima iwe tarakimu 4 hasa",
     "pin_diff_from_current": "PIN mpya lazima iwe tofauti na ya sasa",
     "pin_changed_success": "PIN imebadilishwa kwa mafanikio",
+    "change_phone": "Badilisha Namba ya Simu",
+    "current_phone": "Namba ya Simu ya Sasa",
+    "new_phone": "Namba Mpya ya Simu",
+    "confirm_new_phone": "Thibitisha Namba Mpya",
+    "enter_current_phone": "Tafadhali ingiza namba ya simu ya sasa",
+    "enter_new_phone": "Tafadhali ingiza namba mpya ya simu",
+    "confirm_new_phone_req": "Tafadhali thibitisha namba mpya",
+    "phones_not_match": "Namba mpya hazilingani",
+    "phone_must_valid": "Namba ya simu lazima iwe sahihi (tarakimu 9)",
+    "phone_diff_from_current": "Namba mpya lazima iwe tofauti na ya sasa",
+    "phone_changed_success": "Namba ya simu imebadilishwa kwa mafanikio",
     "logout": "Toka",
     "logout_confirm": "Una uhakika unataka kutoka?",
     "cancel": "Ghairi",
@@ -233,11 +245,18 @@
     "status": "Hali",
     "pending": "Inasubiri",
     "paid": "Imelipwa",
+    "unpaid": "Haijalipiwa",
     "overdue": "Imechelewa",
     "total_debts": "Jumla ya Madeni",
     "total_paid": "Jumla Iliyolipwa",
     "payment_successful": "Malipo yamehifadhiwa kwa mafanikio",
-    "debt_paid_off": "Deni limekwisha kulipwa kabisa!"
+    "debt_paid_off": "Deni limekwisha kulipwa kabisa!",
+    "cash": "Taslimu",
+    "mpesa": "M-Pesa",
+    "tigo_pesa": "Tigo Pesa",
+    "bank": "Benki",
+    "cheque": "Hundi",
+    "other": "Nyingine"
   },
   "products": {
     "product_details": "Maelezo ya Bidhaa",
@@ -272,7 +291,7 @@
     "cancel": "Ghairi",
     "close": "Funga",
     "edit": "Hariri",
-    "product_not_found": "Bidhaa haijapatikana",
+    "product_not_found": "Bidhaa hazipo",
     "optional_information": "Maelezo zaidi",
     "add_button": "Ongeza",
     "cancel_button": "Ghairi",

@@ -31,8 +31,10 @@ class _DebtsPageState extends State<DebtsPage> {
     setState(() => _isLoading = true);
 
     try {
-      final debts = await SupabaseService.getCustomerCreditsForStore(widget.store.id);
-      final summary = await SupabaseService.getCustomerCreditSummary(widget.store.id);
+      final debts =
+          await SupabaseService.getCustomerCreditsForStore(widget.store.id);
+      final summary =
+          await SupabaseService.getCustomerCreditSummary(widget.store.id);
 
       setState(() {
         _debts = debts;
@@ -67,7 +69,8 @@ class _DebtsPageState extends State<DebtsPage> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (context) => DebtDetailsSheet(debt: debt, onPaymentAdded: _loadDebts),
+      builder: (context) =>
+          DebtDetailsSheet(debt: debt, onPaymentAdded: _loadDebts),
     );
   }
 
@@ -88,7 +91,8 @@ class _DebtsPageState extends State<DebtsPage> {
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A), size: 22),
+          icon:
+              const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A), size: 22),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -106,7 +110,8 @@ class _DebtsPageState extends State<DebtsPage> {
                       : ListView.separated(
                           padding: const EdgeInsets.all(16),
                           itemCount: _debts.length,
-                          separatorBuilder: (context, index) => const SizedBox(height: 12),
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 12),
                           itemBuilder: (context, index) {
                             final debt = _debts[index];
                             return InkWell(
@@ -123,7 +128,8 @@ class _DebtsPageState extends State<DebtsPage> {
 
   Widget _buildDebtSummary() {
     final totalDebts = _debtSummary!['total_credits'] as int? ?? 0;
-    final totalOutstanding = _debtSummary!['total_outstanding'] as double? ?? 0.0;
+    final totalOutstanding =
+        _debtSummary!['total_outstanding'] as double? ?? 0.0;
     final totalPaid = _debtSummary!['total_paid'] as double? ?? 0.0;
 
     return Container(
@@ -228,7 +234,7 @@ class _DebtsPageState extends State<DebtsPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            'All outstanding debts have been paid!',
+            'Madeni yote yamelipwa!',
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey.shade400,
@@ -241,9 +247,13 @@ class _DebtsPageState extends State<DebtsPage> {
   }
 
   Widget _buildDebtCard(CustomerCredit debt) {
-    final progress = debt.totalCredit > 0 ? debt.paidAmount / debt.totalCredit : 0.0;
-    final statusColor = debt.status == 'paid' ? Colors.green :
-                       debt.status == 'overdue' ? Colors.red : Colors.orange;
+    final progress =
+        debt.totalCredit > 0 ? debt.paidAmount / debt.totalCredit : 0.0;
+    final statusColor = debt.status == 'paid'
+        ? Colors.green
+        : debt.status == 'overdue'
+            ? Colors.red
+            : Colors.orange;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -313,7 +323,7 @@ class _DebtsPageState extends State<DebtsPage> {
                     ),
                   ),
                   Text(
-                    '${debt.balance.toStringAsFixed(0)} TZS left',
+                    '${debt.balance.toStringAsFixed(0)} TZS imebaki',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey.shade600,
@@ -347,7 +357,8 @@ class _DebtsPageState extends State<DebtsPage> {
                   label: Text('debts.add_payment'.tr()),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF00C853),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     textStyle: const TextStyle(fontSize: 12),
                   ),
                 ),
@@ -417,7 +428,9 @@ class _AddPaymentDialogState extends State<AddPaymentDialog> {
     if (!_formKey.currentState!.validate()) return;
 
     final amount = double.parse(_amountController.text);
-    final notes = _notesController.text.trim().isEmpty ? null : _notesController.text.trim();
+    final notes = _notesController.text.trim().isEmpty
+        ? null
+        : _notesController.text.trim();
 
     try {
       await SupabaseService.updateCustomerCreditPayment(
@@ -438,7 +451,7 @@ class _AddPaymentDialogState extends State<AddPaymentDialog> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to add payment: $e')),
+        SnackBar(content: Text('Imeshindwa kuongeza malipo: $e')),
       );
     }
   }
@@ -470,13 +483,13 @@ class _AddPaymentDialogState extends State<AddPaymentDialog> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                  Text(
-                    'Remaining: ${widget.debt.balance.toStringAsFixed(0)} TZS',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
+                    Text(
+                      'Zilizobaki: ${widget.debt.balance.toStringAsFixed(0)} TZS',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
-                  ),
                   ],
                 ),
               ),
@@ -540,7 +553,7 @@ class _AddPaymentDialogState extends State<AddPaymentDialog> {
                 controller: _notesController,
                 decoration: InputDecoration(
                   labelText: 'debts.notes'.tr(),
-                  hintText: 'Payment notes (optional)',
+                  hintText: 'Maelezo ya malipo (si lazima)',
                   border: const OutlineInputBorder(),
                 ),
                 maxLines: 3,
@@ -591,9 +604,13 @@ class DebtDetailsSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress = debt.totalCredit > 0 ? debt.paidAmount / debt.totalCredit : 0.0;
-    final statusColor = debt.status == 'paid' ? Colors.green :
-                       debt.status == 'overdue' ? Colors.red : Colors.orange;
+    final progress =
+        debt.totalCredit > 0 ? debt.paidAmount / debt.totalCredit : 0.0;
+    final statusColor = debt.status == 'paid'
+        ? Colors.green
+        : debt.status == 'overdue'
+            ? Colors.red
+            : Colors.orange;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -605,7 +622,7 @@ class DebtDetailsSheet extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Debt Details',
+                'Maelezo ya Deni',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -628,17 +645,21 @@ class DebtDetailsSheet extends StatelessWidget {
             ),
             child: Column(
               children: [
-                _buildDetailRow('Customer', debt.customerName),
+                _buildDetailRow('Mteja', debt.customerName),
                 const SizedBox(height: 8),
-                _buildDetailRow('Total Amount', '${debt.totalCredit.toStringAsFixed(0)} TZS'),
+                _buildDetailRow(
+                    'Jumla', '${debt.totalCredit.toStringAsFixed(0)} TZS'),
                 const SizedBox(height: 8),
-                _buildDetailRow('Paid Amount', '${debt.paidAmount.toStringAsFixed(0)} TZS'),
+                _buildDetailRow(
+                    'Amelipa', '${debt.paidAmount.toStringAsFixed(0)} TZS'),
                 const SizedBox(height: 8),
-                _buildDetailRow('Remaining', '${debt.balance.toStringAsFixed(0)} TZS'),
+                _buildDetailRow(
+                    'Imebaki', '${debt.balance.toStringAsFixed(0)} TZS'),
                 const SizedBox(height: 8),
-                _buildDetailRow('Status', 'debts.${debt.status}'.tr()),
+                _buildDetailRow('Hali', 'debts.${debt.status}'.tr()),
                 const SizedBox(height: 8),
-                _buildDetailRow('Sale Date', '${debt.createdAt.day}/${debt.createdAt.month}/${debt.createdAt.year}'),
+                _buildDetailRow('Tarehe ya Mauzo',
+                    '${debt.createdAt.day}/${debt.createdAt.month}/${debt.createdAt.year}'),
               ],
             ),
           ),
@@ -650,7 +671,7 @@ class DebtDetailsSheet extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Payment Progress',
+                'Maendeleo ya Malipo',
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -664,7 +685,7 @@ class DebtDetailsSheet extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                '${(progress * 100).toStringAsFixed(1)}% paid',
+                '${(progress * 100).toStringAsFixed(1)}% imelipwa',
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey.shade600,

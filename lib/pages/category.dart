@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../model/store.dart';
 import '../model/category.dart';
+import '../model/product.dart';
 import '../services/supabase_service.dart';
+import 'product_view.dart';
 
 class CategoryPage extends StatefulWidget {
   final Store store;
@@ -19,6 +21,7 @@ class CategoryPage extends StatefulWidget {
 class _CategoryPageState extends State<CategoryPage> {
   List<Category> _categories = [];
   Map<String, List<SubCategory>> _subcategories = {};
+  Map<String, List<Product>> _categoryProducts = {};
   bool _isLoading = true;
   String? _selectedCategoryId;
   bool _isSearching = false;
@@ -34,7 +37,8 @@ class _CategoryPageState extends State<CategoryPage> {
   Future<void> _loadCategories() async {
     setState(() => _isLoading = true);
     try {
-      final categories = await SupabaseService.getCategoriesForStore(widget.store.id);
+      final categories =
+          await SupabaseService.getCategoriesForStore(widget.store.id);
       setState(() => _categories = categories);
 
       // Load subcategories for all categories to show counts immediately
@@ -53,7 +57,8 @@ class _CategoryPageState extends State<CategoryPage> {
       // Load subcategories for each category
       for (final category in categories) {
         try {
-          final subcategories = await SupabaseService.getSubCategoriesForCategory(category.id);
+          final subcategories =
+              await SupabaseService.getSubCategoriesForCategory(category.id);
           subcategoryMap[category.id] = subcategories;
         } catch (e) {
           // Continue loading other categories even if one fails
@@ -69,10 +74,23 @@ class _CategoryPageState extends State<CategoryPage> {
 
   Future<void> _loadSubcategories(String categoryId) async {
     try {
-      final subcategories = await SupabaseService.getSubCategoriesForCategory(categoryId);
+      final subcategories =
+          await SupabaseService.getSubCategoriesForCategory(categoryId);
       setState(() => _subcategories[categoryId] = subcategories);
     } catch (e) {
       _showSnackBar('Error loading subcategories: $e', isError: true);
+    }
+  }
+
+  Future<void> _loadCategoryProducts(String categoryId) async {
+    try {
+      final products = await SupabaseService.getProductsForStore(
+        widget.store.id,
+        categoryId: categoryId,
+      );
+      setState(() => _categoryProducts[categoryId] = products);
+    } catch (e) {
+      _showSnackBar('Error loading products: $e', isError: true);
     }
   }
 
@@ -133,7 +151,8 @@ class _CategoryPageState extends State<CategoryPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Subcategory'),
-        content: const Text('Are you sure you want to delete this subcategory?'),
+        content:
+            const Text('Are you sure you want to delete this subcategory?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -165,6 +184,7 @@ class _CategoryPageState extends State<CategoryPage> {
   void _selectCategory(String categoryId) {
     setState(() => _selectedCategoryId = categoryId);
     _loadSubcategories(categoryId);
+    _loadCategoryProducts(categoryId);
   }
 
   void _goBackToCategories() {
@@ -178,20 +198,30 @@ class _CategoryPageState extends State<CategoryPage> {
 
   List<Category> get _filteredCategories {
     if (_searchQuery.isEmpty) return _categories;
-    return _categories.where((category) =>
-      category.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-      (category.description?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false)
-    ).toList();
+    return _categories
+        .where((category) =>
+            category.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            (category.description
+                    ?.toLowerCase()
+                    .contains(_searchQuery.toLowerCase()) ??
+                false))
+        .toList();
   }
 
   List<SubCategory> get _filteredSubcategories {
     if (_selectedCategoryId == null || _searchQuery.isEmpty) {
       return _subcategories[_selectedCategoryId!] ?? [];
     }
-    return (_subcategories[_selectedCategoryId!] ?? []).where((subcategory) =>
-      subcategory.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-      (subcategory.description?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false)
-    ).toList();
+    return (_subcategories[_selectedCategoryId!] ?? [])
+        .where((subcategory) =>
+            subcategory.name
+                .toLowerCase()
+                .contains(_searchQuery.toLowerCase()) ||
+            (subcategory.description
+                    ?.toLowerCase()
+                    .contains(_searchQuery.toLowerCase()) ??
+                false))
+        .toList();
   }
 
   Future<void> _addCategory() async {
@@ -269,7 +299,8 @@ class _CategoryPageState extends State<CategoryPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? Colors.red.shade600 : const Color(0xFF00C853),
+        backgroundColor:
+            isError ? Colors.red.shade600 : const Color(0xFF00C853),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.all(16),
@@ -288,7 +319,8 @@ class _CategoryPageState extends State<CategoryPage> {
               color: Colors.red.shade50,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(Icons.warning_rounded, color: Colors.red.shade600, size: 24),
+            child: Icon(Icons.warning_rounded,
+                color: Colors.red.shade600, size: 24),
           ),
           const SizedBox(width: 12),
           Text('categories.delete_category'.tr()),
@@ -311,7 +343,8 @@ class _CategoryPageState extends State<CategoryPage> {
             foregroundColor: Colors.white,
             elevation: 0,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
           child: Text('categories.delete_category'.tr()),
         ),
@@ -331,7 +364,9 @@ class _CategoryPageState extends State<CategoryPage> {
             ? TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: _selectedCategoryId != null ? 'Search subcategories...' : 'Search categories...',
+                  hintText: _selectedCategoryId != null
+                      ? 'Tafuta jamii ndogo...'
+                      : 'Tafuta jamii...',
                   border: InputBorder.none,
                   hintStyle: TextStyle(
                     color: Colors.grey.shade500,
@@ -346,7 +381,9 @@ class _CategoryPageState extends State<CategoryPage> {
                 onChanged: (value) => setState(() => _searchQuery = value),
               )
             : Text(
-                _selectedCategoryId != null ? 'Subcategories' : 'categories.title'.tr(),
+                _selectedCategoryId != null
+                    ? 'Jamii ndogo'
+                    : 'categories.title'.tr(),
                 style: const TextStyle(
                   color: Color(0xFF1A1A1A),
                   fontSize: 18,
@@ -390,26 +427,145 @@ class _CategoryPageState extends State<CategoryPage> {
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator(color: Color(0xFF00C853)))
-              : _selectedCategoryId != null
-                  ? _buildSubcategoriesView()
-                  : _categories.isEmpty
-                      ? _buildEmptyState()
-                      : _buildCategoriesList(),
+        child: Column(
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: _isLoading
+                    ? const Center(
+                        child:
+                            CircularProgressIndicator(color: Color(0xFF00C853)))
+                    : _selectedCategoryId != null
+                        ? _buildSubcategoriesView()
+                        : _categories.isEmpty
+                            ? _buildEmptyState()
+                            : _buildCategoriesList(),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _selectedCategoryId != null
+                      ? _addSubcategory
+                      : _addCategory,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00C853),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    _selectedCategoryId != null
+                        ? 'Ongeza jamii ndogo'
+                        : 'Ongeza jamii',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
-      floatingActionButton: _buildFAB(),
     );
   }
 
-  Widget _buildFAB() {
-    return FloatingActionButton(
-      onPressed: _selectedCategoryId != null ? _addSubcategory : _addCategory,
-      backgroundColor: const Color(0xFF00C853),
-      child: const Icon(Icons.add),
+  Widget _buildProductCard(Product product) {
+    return Container(
+      width: 140,
+      margin: const EdgeInsets.only(right: 12),
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => ProductViewPage(
+                storeId: widget.store.id,
+                productId: product.id,
+              ),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade200, width: 1),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                height: 80,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                ),
+                child: product.media != null && product.media!.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(12),
+                          topRight: Radius.circular(12),
+                        ),
+                        child: Image.network(
+                          product.media!.first.mediaUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Icon(
+                            Icons.inventory_2_outlined,
+                            color: Colors.grey.shade400,
+                            size: 32,
+                          ),
+                        ),
+                      )
+                    : Icon(
+                        Icons.inventory_2_outlined,
+                        color: Colors.grey.shade400,
+                        size: 32,
+                      ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      product.name,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1A1A1A),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${product.sellingPrice} TZS',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF00C853),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -467,7 +623,7 @@ class _CategoryPageState extends State<CategoryPage> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'No categories found',
+                  'Hakuna jamii zilizopatikana',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -476,7 +632,7 @@ class _CategoryPageState extends State<CategoryPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Try a different search term',
+                  'Jaribu neno lingine la utafutaji',
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey.shade500,
@@ -493,7 +649,8 @@ class _CategoryPageState extends State<CategoryPage> {
               childAspectRatio: 0.85,
             ),
             itemCount: filteredCategories.length,
-            itemBuilder: (context, index) => _buildCategoryCard(filteredCategories[index]),
+            itemBuilder: (context, index) =>
+                _buildCategoryCard(filteredCategories[index]),
           );
   }
 
@@ -577,7 +734,8 @@ class _CategoryPageState extends State<CategoryPage> {
               if (subcategoryCount > 0)
                 Container(
                   margin: const EdgeInsets.only(left: 4),
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                   decoration: BoxDecoration(
                     color: const Color(0xFF00C853).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(6),
@@ -645,9 +803,66 @@ class _CategoryPageState extends State<CategoryPage> {
 
   Widget _buildSubcategoriesView() {
     final filteredSubcategories = _filteredSubcategories;
+    final products = _categoryProducts[_selectedCategoryId] ?? [];
+
     return Column(
       children: [
-        if (filteredSubcategories.isEmpty && _searchQuery.isEmpty)
+        // Products Section
+        if (products.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Row(
+              children: [
+                const Icon(Icons.inventory_2_outlined,
+                    size: 20, color: Color(0xFF00C853)),
+                const SizedBox(width: 8),
+                Text(
+                  'Bidhaa (${products.length})',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1A1A1A),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 120,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: products.length,
+              itemBuilder: (context, index) =>
+                  _buildProductCard(products[index]),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Divider(),
+        ],
+        // Subcategories Section
+        if (filteredSubcategories.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Row(
+              children: [
+                const Icon(Icons.subdirectory_arrow_right_outlined,
+                    size: 20, color: Color(0xFF00C853)),
+                const SizedBox(width: 8),
+                Text(
+                  'Jamii Ndogo (${filteredSubcategories.length})',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1A1A1A),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        if (filteredSubcategories.isEmpty &&
+            _searchQuery.isEmpty &&
+            products.isEmpty)
           Expanded(
             child: Center(
               child: Column(
@@ -667,7 +882,7 @@ class _CategoryPageState extends State<CategoryPage> {
                   ),
                   const SizedBox(height: 24),
                   const Text(
-                    'No subcategories',
+                    'Hakuna jamii ndogo',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
@@ -676,7 +891,7 @@ class _CategoryPageState extends State<CategoryPage> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Add your first subcategory',
+                    'Ongeza jamii ndogo yako ya kwanza',
                     style: TextStyle(fontSize: 14, color: Colors.grey),
                     textAlign: TextAlign.center,
                   ),
@@ -697,7 +912,7 @@ class _CategoryPageState extends State<CategoryPage> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'No subcategories found',
+                    'Hakuna jamii ndogo zilizopatikana',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -706,7 +921,7 @@ class _CategoryPageState extends State<CategoryPage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Try a different search term',
+                    'Jaribu neno lingine la utafutaji',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey.shade500,
@@ -720,7 +935,8 @@ class _CategoryPageState extends State<CategoryPage> {
           Expanded(
             child: ListView.builder(
               itemCount: filteredSubcategories.length,
-              itemBuilder: (context, index) => _buildSubcategoryItem(filteredSubcategories[index]),
+              itemBuilder: (context, index) =>
+                  _buildSubcategoryItem(filteredSubcategories[index]),
             ),
           ),
       ],
@@ -828,15 +1044,15 @@ class _SubCategoryFormDialogState extends State<SubCategoryFormDialog> {
             TextFormField(
               controller: _nameController,
               decoration: const InputDecoration(
-                hintText: 'Subcategory name',
+                hintText: 'Jina la jamii ndogo',
                 border: OutlineInputBorder(),
               ),
               validator: (value) {
                 if (value?.trim().isEmpty ?? true) {
-                  return 'Name is required';
+                  return 'Jina linahitajika';
                 }
                 if (value!.trim().length < 2) {
-                  return 'Name too short';
+                  return 'Jina fupi sana';
                 }
                 return null;
               },
@@ -845,7 +1061,7 @@ class _SubCategoryFormDialogState extends State<SubCategoryFormDialog> {
             TextFormField(
               controller: _descriptionController,
               decoration: const InputDecoration(
-                hintText: 'Description (optional)',
+                hintText: 'Maelezo (si lazima)',
                 border: OutlineInputBorder(),
               ),
               maxLines: 2,
@@ -856,14 +1072,14 @@ class _SubCategoryFormDialogState extends State<SubCategoryFormDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: const Text('Ghairi'),
         ),
         ElevatedButton(
           onPressed: _submit,
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF00C853),
           ),
-          child: const Text('Save'),
+          child: const Text('Hifadhi'),
         ),
       ],
     );
@@ -929,15 +1145,15 @@ class _CategoryFormDialogState extends State<CategoryFormDialog> {
             TextFormField(
               controller: _nameController,
               decoration: const InputDecoration(
-                hintText: 'Category name',
+                hintText: 'Jina la jamii',
                 border: OutlineInputBorder(),
               ),
               validator: (value) {
                 if (value?.trim().isEmpty ?? true) {
-                  return 'Name is required';
+                  return 'Jina linahitajika';
                 }
                 if (value!.trim().length < 2) {
-                  return 'Name too short';
+                  return 'Jina fupi sana';
                 }
                 return null;
               },
@@ -946,7 +1162,7 @@ class _CategoryFormDialogState extends State<CategoryFormDialog> {
             TextFormField(
               controller: _descriptionController,
               decoration: const InputDecoration(
-                hintText: 'Description (optional)',
+                hintText: 'Maelezo (si lazima)',
                 border: OutlineInputBorder(),
               ),
               maxLines: 2,
@@ -957,14 +1173,14 @@ class _CategoryFormDialogState extends State<CategoryFormDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: const Text('Ghairi'),
         ),
         ElevatedButton(
           onPressed: _submit,
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF00C853),
           ),
-          child: const Text('Save'),
+          child: const Text('Hifadhi'),
         ),
       ],
     );

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../model/product.dart';
 import '../services/supabase_service.dart';
-import '../widgets/debug_media_widget.dart';
 import 'product_details.dart';
 
 class ProductViewPage extends StatefulWidget {
@@ -48,6 +46,79 @@ class _ProductViewPageState extends State<ProductViewPage> {
     }
   }
 
+  Future<void> _deleteProduct() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.warning_rounded,
+                  color: Colors.red.shade600, size: 24),
+            ),
+            const SizedBox(width: 12),
+            const Text('Futa Bidhaa'),
+          ],
+        ),
+        content: Text('Una uhakika unataka kufuta "${product?.name}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.grey.shade700,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
+            child: const Text('Ghairi'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Futa'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await SupabaseService.deleteProduct(widget.productId!);
+        if (mounted) {
+          Navigator.of(context).pop(true); // Return true to trigger refresh
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Bidhaa imefutwa kwa mafanikio'),
+              backgroundColor: Color(0xFF00C853),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Imeshindwa kufuta bidhaa: $e'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -56,14 +127,14 @@ class _ProductViewPageState extends State<ProductViewPage> {
           backgroundColor: Colors.white,
           elevation: 0,
           surfaceTintColor: Colors.white,
-        title: Text(
-          'products.product_details'.tr(),
-          style: const TextStyle(
-            color: Color(0xFF1A1A1A),
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
+          title: Text(
+            'products.product_details'.tr(),
+            style: const TextStyle(
+              color: Color(0xFF1A1A1A),
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        ),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
             onPressed: () => Navigator.of(context).pop(),
@@ -118,9 +189,14 @@ class _ProductViewPageState extends State<ProductViewPage> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: Colors.red),
+            onPressed: _deleteProduct,
+            tooltip: 'Futa Bidhaa',
+          ),
           TextButton.icon(
-            onPressed: () {
-              Navigator.of(context).pushReplacement(
+            onPressed: () async {
+              final result = await Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (context) => ProductDetailsPage(
                     storeId: widget.storeId,
@@ -128,6 +204,9 @@ class _ProductViewPageState extends State<ProductViewPage> {
                   ),
                 ),
               );
+              if (result == true) {
+                _loadProduct();
+              }
             },
             icon: const Icon(Icons.edit, color: Color(0xFF00C853)),
             label: Text(
@@ -154,7 +233,8 @@ class _ProductViewPageState extends State<ProductViewPage> {
                       final media = product!.media![index];
                       return Container(
                         width: 200,
-                        margin: EdgeInsets.only(right: index < product!.media!.length - 1 ? 12 : 0),
+                        margin: EdgeInsets.only(
+                            right: index < product!.media!.length - 1 ? 12 : 0),
                         decoration: BoxDecoration(
                           color: Colors.grey.shade100,
                           borderRadius: BorderRadius.circular(12),
@@ -165,22 +245,24 @@ class _ProductViewPageState extends State<ProductViewPage> {
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                        child: media.mediaType == 'image'
-                            ? Image.network(
-                                media.mediaUrl,
-                                fit: BoxFit.cover,
-                                loadingBuilder: (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return const Center(
-                                    child: CircularProgressIndicator(),
-                                  );
-                                },
-                                errorBuilder: (context, error, stackTrace) => const Icon(
-                                  Icons.image_not_supported,
-                                  color: Colors.grey,
-                                  size: 48,
-                                ),
-                              )
+                          child: media.mediaType == 'image'
+                              ? Image.network(
+                                  media.mediaUrl,
+                                  fit: BoxFit.cover,
+                                  loadingBuilder:
+                                      (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return const Center(
+                                      child: CircularProgressIndicator(),
+                                    );
+                                  },
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const Icon(
+                                    Icons.image_not_supported,
+                                    color: Colors.grey,
+                                    size: 48,
+                                  ),
+                                )
                               : const Icon(
                                   Icons.video_file,
                                   color: Colors.grey,
@@ -225,34 +307,35 @@ class _ProductViewPageState extends State<ProductViewPage> {
               // Stock Status and Price
               Row(
                 children: [
-              // Stock Status
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: quantity <= 0
-                      ? Colors.red.withOpacity(0.1)
-                      : quantity <= lowStockAlert
-                          ? Colors.orange.withOpacity(0.1)
-                          : Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  quantity <= 0
-                      ? 'products.out_of_stock'.tr()
-                      : quantity <= lowStockAlert
-                          ? 'products.low_stock'.tr()
-                          : 'products.in_stock'.tr(),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: quantity <= 0
-                        ? Colors.red
-                        : quantity <= lowStockAlert
-                            ? Colors.orange
-                            : Colors.green,
+                  // Stock Status
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: quantity <= 0
+                          ? Colors.red.withOpacity(0.1)
+                          : quantity <= lowStockAlert
+                              ? Colors.orange.withOpacity(0.1)
+                              : Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      quantity <= 0
+                          ? 'products.out_of_stock'.tr()
+                          : quantity <= lowStockAlert
+                              ? 'products.low_stock'.tr()
+                              : 'products.in_stock'.tr(),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: quantity <= 0
+                            ? Colors.red
+                            : quantity <= lowStockAlert
+                                ? Colors.orange
+                                : Colors.green,
+                      ),
+                    ),
                   ),
-                ),
-              ),
                   const Spacer(),
                   // Price
                   Text(
@@ -342,27 +425,34 @@ class _ProductViewPageState extends State<ProductViewPage> {
               // Information Cards
               if (product!.sku != null && product!.sku!.isNotEmpty)
                 _buildInfoRow('SKU', product!.sku!),
-              if (product!.productCode != null && product!.productCode!.isNotEmpty)
-                _buildInfoRow('Product Code', product!.productCode!),
+              if (product!.productCode != null &&
+                  product!.productCode!.isNotEmpty)
+                _buildInfoRow('Msimbo wa Bidhaa', product!.productCode!),
               if (product!.costPrice != null)
-                _buildInfoRow('Cost Price', '${product!.costPrice} TZS'),
+                _buildInfoRow('Bei ya Ununuzi', '${product!.costPrice} TZS'),
               if (product!.wholesalePrice != null)
-                _buildInfoRow('Wholesale Price', '${product!.wholesalePrice} TZS'),
+                _buildInfoRow('Bei ya Jumla', '${product!.wholesalePrice} TZS'),
               if (product!.discountPrice != null)
-                _buildInfoRow('Discount Price', '${product!.discountPrice} TZS'),
-              if (product!.supplierName != null && product!.supplierName!.isNotEmpty)
-                _buildInfoRow('Supplier', product!.supplierName!),
-              if (product!.batchNumber != null && product!.batchNumber!.isNotEmpty)
-                _buildInfoRow('Batch Number', product!.batchNumber!),
+                _buildInfoRow(
+                    'Bei ya Punguzo', '${product!.discountPrice} TZS'),
+              if (product!.supplierName != null &&
+                  product!.supplierName!.isNotEmpty)
+                _buildInfoRow('Msambazaji', product!.supplierName!),
+              if (product!.batchNumber != null &&
+                  product!.batchNumber!.isNotEmpty)
+                _buildInfoRow('Namba ya Lundo', product!.batchNumber!),
               if (product!.expiryDate != null)
-                _buildInfoRow('Expiry Date', product!.expiryDate!.toLocal().toString().split(' ')[0]),
+                _buildInfoRow('Tarehe ya Mwisho',
+                    product!.expiryDate!.toLocal().toString().split(' ')[0]),
               if (product!.supplierDate != null)
-                _buildInfoRow('Supplier Date', product!.supplierDate!.toLocal().toString().split(' ')[0]),
+                _buildInfoRow('Tarehe ya Msambazaji',
+                    product!.supplierDate!.toLocal().toString().split(' ')[0]),
 
               const SizedBox(height: 24),
 
               // Description
-              if (product!.description != null && product!.description!.isNotEmpty) ...[
+              if (product!.description != null &&
+                  product!.description!.isNotEmpty) ...[
                 const SizedBox(height: 24),
                 Text(
                   'products.description'.tr(),

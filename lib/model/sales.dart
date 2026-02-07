@@ -21,7 +21,8 @@ class SaleItem {
     this.costPrice,
   });
 
-  double get profit => costPrice != null ? (unitPrice - costPrice!) * quantity : 0.0;
+  double get profit =>
+      costPrice != null ? (unitPrice - costPrice!) * quantity : 0.0;
 
   factory SaleItem.fromJson(Map<String, dynamic> json) {
     return SaleItem(
@@ -92,8 +93,8 @@ class Sale {
       storeId: json['store_id'],
       soldBy: json['sold_by'],
       items: (json['sale_items'] as List<dynamic>?)
-          ?.map((item) => SaleItem.fromJson(item))
-          .toList() ??
+              ?.map((item) => SaleItem.fromJson(item))
+              .toList() ??
           [],
       paymentMethod: PaymentMethod.values.firstWhere(
         (e) => e.toString().split('.').last == json['payment_method'],
@@ -106,7 +107,9 @@ class Sale {
         (e) => e.toString().split('.').last == (json['status'] ?? 'completed'),
         orElse: () => SaleStatus.completed,
       ),
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : null,
     );
   }
 
@@ -146,7 +149,9 @@ class Payment {
       saleId: json['sale_id'],
       amount: json['amount']?.toDouble() ?? 0.0,
       method: json['method'] ?? '',
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : null,
     );
   }
 

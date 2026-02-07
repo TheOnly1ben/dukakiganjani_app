@@ -43,7 +43,9 @@ class Employee {
       username: json['username'] ?? '',
       phone: json['phone'],
       isActive: json['is_active'] ?? true,
-      deactivatedAt: json['deactivated_at'] != null ? DateTime.parse(json['deactivated_at']) : null,
+      deactivatedAt: json['deactivated_at'] != null
+          ? DateTime.parse(json['deactivated_at'])
+          : null,
       createdAt: DateTime.parse(json['created_at']),
     );
   }
@@ -106,7 +108,9 @@ class StoreEmployee {
       employeeId: json['employee_id'],
       role: EmployeeRole.fromString(json['role']),
       createdAt: DateTime.parse(json['created_at']),
-      employee: json['employees'] != null ? Employee.fromJson(json['employees']) : null,
+      employee: json['employees'] != null
+          ? Employee.fromJson(json['employees'])
+          : null,
     );
   }
 

@@ -106,6 +106,13 @@ class _ReportsPageState extends State<ReportsPage>
       initialDateRange: _startDate != null && _endDate != null
           ? DateTimeRange(start: _startDate!, end: _endDate!)
           : null,
+      locale: const Locale('sw', 'TZ'),
+      helpText: 'Chagua kipindi',
+      cancelText: 'Ghairi',
+      confirmText: 'Sawa',
+      saveText: 'Hifadhi',
+      fieldStartLabelText: 'Tarehe ya kuanza',
+      fieldEndLabelText: 'Tarehe ya mwisho',
     );
 
     if (picked != null) {
@@ -837,7 +844,7 @@ class _ReportsPageState extends State<ReportsPage>
                     children: [
                       Text(
                         sale.createdAt != null
-                            ? dateFormat.format(sale.createdAt!)
+                            ? dateFormat.format(sale.createdAt!.toLocal())
                             : 'N/A',
                         style: const TextStyle(
                           fontSize: 15,
@@ -847,7 +854,7 @@ class _ReportsPageState extends State<ReportsPage>
                       ),
                       Text(
                         sale.createdAt != null
-                            ? timeFormat.format(sale.createdAt!)
+                            ? timeFormat.format(sale.createdAt!.toLocal())
                             : '',
                         style: TextStyle(
                           fontSize: 12,
@@ -1261,14 +1268,17 @@ class _ReportsPageState extends State<ReportsPage>
   String _formatDateTime(DateTime? dateTime) {
     if (dateTime == null) return '';
 
+    // Convert to local timezone
+    final localDateTime = dateTime.toLocal();
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final date = DateTime(dateTime.year, dateTime.month, dateTime.day);
+    final date =
+        DateTime(localDateTime.year, localDateTime.month, localDateTime.day);
 
     if (date == today) {
-      return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+      return '${localDateTime.hour.toString().padLeft(2, '0')}:${localDateTime.minute.toString().padLeft(2, '0')}';
     } else {
-      return '${dateTime.day}/${dateTime.month}';
+      return '${localDateTime.day}/${localDateTime.month}';
     }
   }
 }

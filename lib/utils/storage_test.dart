@@ -1,8 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/supabase_service.dart';
-import '../model/product.dart';
 
 class StorageTestWidget extends StatefulWidget {
   const StorageTestWidget({Key? key}) : super(key: key);
@@ -50,7 +48,6 @@ class _StorageTestWidgetState extends State<StorageTestWidget> {
       _testResult += '\n- Verify bucket permissions (should be public)';
       _testResult += '\n- Check if media records exist in product_media table';
       _testResult += '\n- Verify media URLs are valid and accessible';
-
     } catch (e) {
       _testResult += '\n\n❌ Test failed: $e';
       _testResult += '\n\nPossible issues:';
@@ -75,9 +72,9 @@ class _StorageTestWidgetState extends State<StorageTestWidget> {
           children: [
             ElevatedButton(
               onPressed: _isTesting ? null : _runStorageTest,
-              child: _isTesting 
-                ? const CircularProgressIndicator()
-                : const Text('Run Storage Test'),
+              child: _isTesting
+                  ? const CircularProgressIndicator()
+                  : const Text('Run Storage Test'),
             ),
             const SizedBox(height: 16),
             Expanded(

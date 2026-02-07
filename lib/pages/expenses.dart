@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../model/store.dart';
 import '../model/expenses.dart';
+import '../services/offline_data_service.dart';
 import '../services/supabase_service.dart';
 
 class ExpensesPage extends StatefulWidget {
@@ -159,12 +160,14 @@ class _ExpensesPageState extends State<ExpensesPage> {
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A), size: 22),
+          icon:
+              const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A), size: 22),
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.filter_list, color: Color(0xFF1A1A1A), size: 22),
+            icon: const Icon(Icons.filter_list,
+                color: Color(0xFF1A1A1A), size: 22),
             onPressed: _showFilterBottomSheet,
           ),
           IconButton(
@@ -187,7 +190,8 @@ class _ExpensesPageState extends State<ExpensesPage> {
                       : ListView.separated(
                           padding: const EdgeInsets.all(16),
                           itemCount: _expenses.length,
-                          separatorBuilder: (context, index) => const SizedBox(height: 12),
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 12),
                           itemBuilder: (context, index) {
                             final expense = _expenses[index];
                             return InkWell(
@@ -397,7 +401,8 @@ class AddExpenseDialog extends StatefulWidget {
   final Expense? expense;
   final Store? store;
 
-  const AddExpenseDialog({Key? key, this.expense, this.store}) : super(key: key);
+  const AddExpenseDialog({Key? key, this.expense, this.store})
+      : super(key: key);
 
   @override
   State<AddExpenseDialog> createState() => _AddExpenseDialogState();
@@ -459,12 +464,14 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
 
     final purpose = _purposeController.text.trim();
     final amount = double.parse(_amountController.text);
-    final notes = _notesController.text.trim().isEmpty ? null : _notesController.text.trim();
+    final notes = _notesController.text.trim().isEmpty
+        ? null
+        : _notesController.text.trim();
 
     try {
       if (widget.expense != null) {
         // Update existing expense
-        await SupabaseService.updateExpense(
+        await OfflineDataService.updateExpenseWithParams(
           expenseId: widget.expense!.id!,
           purpose: purpose,
           amount: amount,
@@ -481,7 +488,7 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
           return;
         }
 
-        await SupabaseService.addExpense(
+        await OfflineDataService.addExpenseWithParams(
           storeId: widget.store!.id,
           purpose: purpose,
           amount: amount,
@@ -647,7 +654,7 @@ class ExpenseDetailsSheet extends StatelessWidget {
 
     if (confirmed == true) {
       try {
-        await SupabaseService.deleteExpense(expense.id!);
+        await OfflineDataService.deleteExpense(int.parse(expense.id!));
         onDelete();
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -700,11 +707,14 @@ class ExpenseDetailsSheet extends StatelessWidget {
               children: [
                 _buildDetailRow('Purpose', expense.purpose),
                 const SizedBox(height: 12),
-                _buildDetailRow('Amount', '${expense.amount.toStringAsFixed(0)} TZS'),
+                _buildDetailRow(
+                    'Amount', '${expense.amount.toStringAsFixed(0)} TZS'),
                 const SizedBox(height: 12),
-                _buildDetailRow('Payment Method', expense.paymentMethod ?? 'Other'),
+                _buildDetailRow(
+                    'Payment Method', expense.paymentMethod ?? 'Other'),
                 const SizedBox(height: 12),
-                _buildDetailRow('Date', '${expense.expenseDate.day}/${expense.expenseDate.month}/${expense.expenseDate.year}'),
+                _buildDetailRow('Date',
+                    '${expense.expenseDate.day}/${expense.expenseDate.month}/${expense.expenseDate.year}'),
                 if (expense.notes != null && expense.notes!.isNotEmpty) ...[
                   const SizedBox(height: 12),
                   _buildDetailRow('Notes', expense.notes!),
@@ -843,7 +853,7 @@ class _FilterExpensesSheetState extends State<FilterExpensesSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Filter Expenses',
+            'Chuja Matumizi',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -853,7 +863,7 @@ class _FilterExpensesSheetState extends State<FilterExpensesSheet> {
 
           // Date Range
           const Text(
-            'Date Range',
+            'Kipindi cha Tarehe',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
@@ -876,7 +886,7 @@ class _FilterExpensesSheetState extends State<FilterExpensesSheet> {
                     child: Text(
                       _startDate != null && _endDate != null
                           ? '${_startDate!.day}/${_startDate!.month} - ${_endDate!.day}/${_endDate!.month}'
-                          : 'Select date range',
+                          : 'Chagua kipindi cha tarehe',
                       style: TextStyle(
                         color: _startDate != null ? Colors.black : Colors.grey,
                       ),
@@ -891,7 +901,7 @@ class _FilterExpensesSheetState extends State<FilterExpensesSheet> {
 
           // Payment Method
           const Text(
-            'Payment Method',
+            'Njia ya Malipo',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
@@ -907,7 +917,7 @@ class _FilterExpensesSheetState extends State<FilterExpensesSheet> {
             items: [
               const DropdownMenuItem(
                 value: null,
-                child: Text('All Payment Methods'),
+                child: Text('Njia zote za malipo'),
               ),
               ..._paymentMethods.map((method) {
                 return DropdownMenuItem(
@@ -934,20 +944,21 @@ class _FilterExpensesSheetState extends State<FilterExpensesSheet> {
                     widget.onClearFilters();
                     Navigator.pop(context);
                   },
-                  child: const Text('Clear Filters'),
+                  child: const Text('Futa Chujio'),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
                   onPressed: () {
-                    widget.onApplyFilters(_startDate, _endDate, _selectedPaymentMethod);
+                    widget.onApplyFilters(
+                        _startDate, _endDate, _selectedPaymentMethod);
                     Navigator.pop(context);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF00C853),
                   ),
-                  child: const Text('Apply Filters'),
+                  child: const Text('Tekeleza Chujio'),
                 ),
               ),
             ],
